@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QLNhanSu.DTOs.Common;
 using QLNhanSu.Services;
-
+using QLNhanSu.DTOs;
 namespace QLNhanSu.Controllers
 {
     /// <summary>
@@ -106,40 +106,5 @@ namespace QLNhanSu.Controllers
 
             return Ok(new { message = result.Message });
         }
-    }
-
-    /// <summary>Dữ liệu đầu vào để tạo hoặc cập nhật người dùng.</summary>
-    public class UserRegisterDto
-    {
-        /// <summary>Tên đăng nhập.</summary>
-        public string Username { get; set; } = "";
-
-        /// <summary>Email.</summary>
-        public string Email { get; set; } = "";
-
-        /// <summary>Mật khẩu.</summary>
-        public string Password { get; set; } = "";
-
-        /// <summary>Quyền của người dùng (User, HR, Admin). Bỏ trống thì mặc định là "User".</summary>
-        public string? Role { get; set; }
-    }
-
-    /// <summary>Thông tin người dùng trả về cho client.</summary>
-    public class UserResponseDto
-    {
-        /// <summary>Id người dùng.</summary>
-        public int Id { get; set; }
-
-        /// <summary>Tên đăng nhập.</summary>
-        public string Username { get; set; } = "";
-
-        /// <summary>Email.</summary>
-        public string Email { get; set; } = "";
-
-        /// <summary>Quyền của người dùng (User, HR, Admin).</summary>
-        public string Role { get; set; } = "";
-
-        /// <summary>Thời điểm tạo tài khoản.</summary>
-        public DateTime CreatedAt { get; set; }
     }
 }

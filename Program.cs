@@ -140,62 +140,65 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Tự tạo database nếu chưa tồn tại + seed đủ 500 tài khoản mẫu
+// Giữ migration database độc lập với seed tài khoản mẫu.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 
-    const int TotalUsers = 500;
-
-    // Tải sẵn user hiện có để không phải query từng lần
-    var existing = db.Users.ToDictionary(u => u.Username);
-
-    void Upsert(string username, string email, string role, string password, DateTime createdAt)
+    // Chỉ seed tài khoản trong Development và khi được bật rõ ràng.
+    if (app.Environment.IsDevelopment() &&
+        app.Configuration.GetValue<bool>("SeedUsers:Enabled"))
     {
-        using var hmac = new HMACSHA512();
-        var salt = hmac.Key;
-        var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
+        const int TotalUsers = 500;
+        var adminPassword = app.Configuration["SeedUsers:AdminPassword"];
+        var demoPassword = app.Configuration["SeedUsers:DemoPassword"];
 
-        if (existing.TryGetValue(username, out var user))
+        if (string.IsNullOrWhiteSpace(adminPassword) || adminPassword.Length < 12 ||
+            string.IsNullOrWhiteSpace(demoPassword) || demoPassword.Length < 12 ||
+            adminPassword == demoPassword)
         {
-            user.Email = email;
-            user.Role = role;
-            user.PasswordSalt = salt;
-            user.PasswordHash = hash;
+            throw new InvalidOperationException(
+                "SeedUsers requires two distinct passwords of at least 12 characters in User Secrets or environment variables.");
         }
-        else
+
+        var existing = db.Users.AsNoTracking()
+            .Select(u => new { u.Username, u.Email }).ToList();
+        var usernames = new HashSet<string>(existing.Select(u => u.Username), StringComparer.OrdinalIgnoreCase);
+        var emails = new HashSet<string>(existing.Select(u => u.Email), StringComparer.OrdinalIgnoreCase);
+
+        void AddIfMissing(string username, string email, string role, string password, DateTime createdAt)
         {
-            var newUser = new User
+            // Không cập nhật bất kỳ thông tin nào của tài khoản đã tồn tại.
+            if (usernames.Contains(username) || emails.Contains(email))
+                return;
+
+            using var hmac = new HMACSHA512();
+            db.Users.Add(new User
             {
                 Username = username,
                 Email = email,
                 Role = role,
-                PasswordSalt = salt,
-                PasswordHash = hash,
+                PasswordSalt = hmac.Key,
+                PasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password)),
                 CreatedAt = createdAt
-            };
-            db.Users.Add(newUser);
-            existing[username] = newUser;
+            });
+            usernames.Add(username);
+            emails.Add(email);
         }
+
+        AddIfMissing("admin", "admin@example.com", "Admin", adminPassword, DateTime.UtcNow);
+        AddIfMissing("hr01", "hr01@example.com", "HR", demoPassword, DateTime.UtcNow);
+
+        var rnd = new Random(42);
+        for (int i = 1; i <= TotalUsers - 2; i++)
+        {
+            AddIfMissing($"user{i:D2}", $"user{i:D2}@example.com", "User",
+                demoPassword, DateTime.UtcNow.AddDays(-rnd.Next(0, 365)));
+        }
+
+        db.SaveChanges();
     }
-
-    Upsert("admin", "admin@example.com", "Admin", "Admin@123", DateTime.UtcNow);
-    Upsert("hr01", "hr01@example.com", "HR", "123456", DateTime.UtcNow);
-
-    var rnd = new Random(42);
-    var roles = new[] { "User", "User", "User", "HR", "Admin" };
-    for (int i = 1; i <= TotalUsers - 2; i++)
-    {
-        Upsert(
-            $"user{i:D2}",
-            $"user{i:D2}@example.com",
-            roles[rnd.Next(roles.Length)],
-            "123456",
-            DateTime.UtcNow.AddDays(-rnd.Next(0, 365)));
-    }
-
-    db.SaveChanges();
 }
 
 // Logging ngoài cùng để ghi đúng status code sau khi ExceptionHandling đã set response lỗi
