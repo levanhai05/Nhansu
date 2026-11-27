@@ -1,0 +1,62 @@
+## ===== .NET build output =====
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+publish/
+*.dll
+*.exe
+*.pdb
+*.cache
+
+## ===== Visual Studio / VS Code / Rider =====
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+launchSettings.json.user
+
+## ===== Logs (Serilog) =====
+Logs/
+*.log
+
+## ===== Local database files =====
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.mdf
+*.ldf
+
+## ===== Secrets / environment =====
+.env
+.env.*
+secrets.json
+appsettings.Local.json
+appsettings.Production.json
+
+## ===== NuGet =====
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+## ===== Test results / coverage =====
+TestResults/
+coverage/
+*.coverage
+
+## ===== OS files =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## ===== Uploads (nếu sau này lưu file lên đĩa) =====
+wwwroot/uploads/
