@@ -1,3 +1,4 @@
+using QLNhanSu.DTOs.Common;
 using QLNhanSu.DTOs;
 using QLNhanSu.Exceptions;
 using QLNhanSu.Models;
@@ -14,16 +15,16 @@ namespace QLNhanSu.Services
             _repo = repo;
         }
 
-        public async Task<List<ContractDto>> GetAllAsync()
+        public async Task<PagedResult<ContractDto>> GetAllAsync(PaginationParameters page)
         {
-            var items = await _repo.GetAllAsync();
-            return items.Select(ToDto).ToList();
+            var items = await _repo.GetAllAsync(page);
+            return new PagedResult<ContractDto>(items.Items.Select(ToDto).ToList(), items.TotalCount, items.PageNumber, items.PageSize);
         }
 
-        public async Task<List<ContractDto>> GetByEmployeeAsync(int employeeId)
+        public async Task<PagedResult<ContractDto>> GetByEmployeeAsync(int employeeId, PaginationParameters page)
         {
-            var items = await _repo.GetByEmployeeIdAsync(employeeId);
-            return items.Select(ToDto).ToList();
+            var items = await _repo.GetAllAsync(page, employeeId);
+            return new PagedResult<ContractDto>(items.Items.Select(ToDto).ToList(), items.TotalCount, items.PageNumber, items.PageSize);
         }
 
         public async Task<ContractDto> CreateAsync(ContractCreateDto dto)

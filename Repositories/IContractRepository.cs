@@ -1,11 +1,11 @@
+using QLNhanSu.DTOs.Common;
 using QLNhanSu.Models;
 
 namespace QLNhanSu.Repositories
 {
     public interface IContractRepository
     {
-        Task<List<Contract>> GetAllAsync();
-        Task<List<Contract>> GetByEmployeeIdAsync(int employeeId);
+        Task<PagedResult<Contract>> GetAllAsync(PaginationParameters page, int? employeeId = null);
         Task<Contract?> GetByIdAsync(int id);
         Task<bool> EmployeeExistsAsync(int employeeId);
         Task AddAsync(Contract contract);

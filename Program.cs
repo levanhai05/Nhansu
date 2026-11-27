@@ -221,25 +221,31 @@ using (var scope = app.Services.CreateScope())
         var usernames = new HashSet<string>(existing.Select(u => u.Username), StringComparer.OrdinalIgnoreCase);
         var emails = new HashSet<string>(existing.Select(u => u.Email), StringComparer.OrdinalIgnoreCase);
 
-        void AddIfMissing(string username, string email, string role, string password, DateTime createdAt)
-        {
-            // Không cập nhật bất kỳ thông tin nào của tài khoản đã tồn tại.
-            if (usernames.Contains(username) || emails.Contains(email))
-                return;
+       void AddIfMissing(string username, string email, string role,
+    string password, DateTime createdAt)
+{
+    // Không ghi đè tài khoản đã tồn tại
+    if (usernames.Contains(username) || emails.Contains(email))
+        return;
 
-            using var hmac = new HMACSHA512();
-            db.Users.Add(new User
-            {
-                Username = username,
-                Email = email,
-                Role = role,
-                PasswordSalt = hmac.Key,
-                PasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password)),
-                CreatedAt = createdAt
-            });
-            usernames.Add(username);
-            emails.Add(email);
-        }
+    // Sử dụng PBKDF2 để bảo mật mật khẩu
+    PasswordHashing.Create(password,
+        out var passwordHash,
+        out var passwordSalt);
+
+    db.Users.Add(new User
+    {
+        Username = username,
+        Email = email,
+        Role = role,
+        PasswordSalt = passwordSalt,
+        PasswordHash = passwordHash,
+        CreatedAt = createdAt
+    });
+
+    usernames.Add(username);
+    emails.Add(email);
+}
 
         AddIfMissing("admin", "admin@example.com", "Admin", adminPassword, DateTime.UtcNow);
         AddIfMissing("hr01", "hr01@example.com", "HR", demoPassword, DateTime.UtcNow);

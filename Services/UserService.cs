@@ -63,7 +63,7 @@ namespace QLNhanSu.Services
                 return (false, "Role không hợp lệ. Chỉ chấp nhận: User, HR, Admin.", null);
             }
 
-            CreatePasswordHash(request.Password, out byte[] passwordHash, out byte[] passwordSalt);
+            PasswordHashing.Create(request.Password, out byte[] passwordHash, out byte[] passwordSalt);
 
             var newUser = new User
             {
@@ -84,11 +84,17 @@ namespace QLNhanSu.Services
         public async Task<(bool IsSuccess, string Message, TokenPairDto? Tokens)> LoginAsync(LoginDto request)
         {
             var user = await _userRepo.GetByUsernameOrEmailAsync(request.Username, request.Username);
-            if (user == null || !VerifyPasswordHash(request.Password, user.PasswordHash, user.PasswordSalt))
+            if (user == null || !PasswordHashing.Verify(request.Password, user.PasswordHash, user.PasswordSalt, out var needsUpgrade))
             {
                 return (false, "Sai tên đăng nhập hoặc mật khẩu.", null);
             }
 
+            if (needsUpgrade)
+            {
+                PasswordHashing.Create(request.Password, out var upgradedHash, out var upgradedSalt);
+                user.PasswordHash = upgradedHash;
+                user.PasswordSalt = upgradedSalt;
+            }
             var tokens = RotateRefreshToken(user);
             try { await _userRepo.SaveChangesAsync(); }
             catch (DbUpdateConcurrencyException)
@@ -129,13 +135,23 @@ namespace QLNhanSu.Services
             return true;
         }
 
-        public async Task<(bool IsSuccess, string Message)> UpdateAsync(int id, UserRegisterDto request)
+        public async Task<(bool IsSuccess, string Message)> UpdateAsync(int id, UserUpdateDto request)
         {
             var user = await _userRepo.GetByIdAsync(id);
             if (user == null)
             {
                 return (false, $"Không tìm thấy người dùng có Id = {id}");
             }
+
+            if ((request.Username != null && string.IsNullOrWhiteSpace(request.Username)) ||
+                (request.Email != null && string.IsNullOrWhiteSpace(request.Email)) ||
+                (request.Role != null && string.IsNullOrWhiteSpace(request.Role)) ||
+                (request.Password != null && string.IsNullOrWhiteSpace(request.Password)))
+                throw new BadRequestException("Thông tin cập nhật không được chỉ chứa khoảng trắng.");
+
+            if (request.Username == null && request.Email == null &&
+                request.Role == null && request.Password == null)
+                return (true, "Không có thông tin cần cập nhật.");
 
             var username = string.IsNullOrWhiteSpace(request.Username)
                 ? user.Username : request.Username.Trim();
@@ -160,7 +176,7 @@ namespace QLNhanSu.Services
 
             if (!string.IsNullOrEmpty(request.Password))
             {
-                CreatePasswordHash(request.Password, out byte[] passwordHash, out byte[] passwordSalt);
+                PasswordHashing.Create(request.Password, out byte[] passwordHash, out byte[] passwordSalt);
                 user.PasswordHash = passwordHash;
                 user.PasswordSalt = passwordSalt;
             }
@@ -219,20 +235,6 @@ namespace QLNhanSu.Services
             Role = user.Role,
             CreatedAt = user.CreatedAt
         };
-
-        private static void CreatePasswordHash(string password, out byte[] passwordHash, out byte[] passwordSalt)
-        {
-            using var hmac = new HMACSHA512();
-            passwordSalt = hmac.Key;
-            passwordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
-        }
-
-        private static bool VerifyPasswordHash(string password, byte[] passwordHash, byte[] passwordSalt)
-        {
-            using var hmac = new HMACSHA512(passwordSalt);
-            var computed = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
-            return CryptographicOperations.FixedTimeEquals(computed, passwordHash);
-        }
 
         private string CreateToken(User user)
         {

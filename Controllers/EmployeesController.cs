@@ -65,6 +65,24 @@ namespace QLNhanSu.Controllers
             return NoContent();
         }
 
+        /// <summary>Hủy liên kết với tài khoản hiện tại. Chỉ Admin.</summary>
+        [Authorize(Policy = "AdminOnly")]
+        [HttpDelete("{id:int}/link-user/{userId:int}")]
+        public async Task<IActionResult> UnlinkUser(int id, int userId)
+        {
+            await _current.UnlinkAsync(id, userId);
+            return NoContent();
+        }
+
+        /// <summary>Thay liên kết bằng tài khoản chưa liên kết. Chỉ Admin.</summary>
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPut("{id:int}/link-user/{oldUserId:int}/replace/{newUserId:int}")]
+        public async Task<IActionResult> ReplaceUser(int id, int oldUserId, int newUserId)
+        {
+            await _current.ReplaceLinkAsync(id, oldUserId, newUserId);
+            return NoContent();
+        }
+
         /// <summary>Tạo mới một nhân viên. (Admin, HR)</summary>
         /// <param name="dto">Thông tin nhân viên cần tạo.</param>
         /// <response code="201">Tạo thành công.</response>

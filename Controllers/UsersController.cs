@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QLNhanSu.DTOs.Common;
-using QLNhanSu.Services;
 using QLNhanSu.DTOs;
+using QLNhanSu.Services;
+
 namespace QLNhanSu.Controllers
 {
     /// <summary>
@@ -26,7 +27,7 @@ namespace QLNhanSu.Controllers
         /// <response code="200">Trả về danh sách người dùng đã phân trang.</response>
         /// <response code="401">Chưa đăng nhập hoặc token không hợp lệ.</response>
         /// <response code="403">Không đủ quyền.</response>
-       [Authorize(Policy = "AdminOrHR")]
+        [Authorize(Policy = "AdminOrHR")]
         [HttpGet]
         public async Task<ActionResult<PagedResult<UserResponseDto>>> GetAll([FromQuery] UserQueryParameters queryParams)
         {
@@ -70,15 +71,15 @@ namespace QLNhanSu.Controllers
             return CreatedAtAction(nameof(GetById), new { id = result.Data!.Id }, result.Data);
         }
 
-        /// <summary>Cập nhật thông tin một người dùng. Trường nào để trống thì giữ nguyên giá trị cũ. (Admin)</summary>
+        /// <summary>Cập nhật thông tin một người dùng. Trường nào không truyền hoặc null thì giữ nguyên giá trị cũ. (Admin)</summary>
         /// <param name="id">Id của người dùng cần cập nhật.</param>
         /// <param name="request">Thông tin mới (Username, Email, Password, Role).</param>
         /// <response code="200">Cập nhật thành công.</response>
         /// <response code="403">Không đủ quyền.</response>
-        /// <response code="404">Không tìm thấy người dùng hoặc Role không hợp lệ.</response>
+        /// <response code="404">Không tìm thấy người dùng.</response>
         [Authorize(Policy = "AdminOnly")]
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> Update(int id, [FromBody] UserRegisterDto request)
+        public async Task<IActionResult> Update(int id, [FromBody] UserUpdateDto request)
         {
             var result = await _userService.UpdateAsync(id, request);
             if (!result.IsSuccess)

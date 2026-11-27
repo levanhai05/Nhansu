@@ -86,6 +86,22 @@ namespace QLNhanSu.Repositories
         public Task<bool> PositionExistsAsync(int positionId)
             => _db.Positions.AnyAsync(p => p.Id == positionId);
 
+        public Task<int?> GetActiveEmployeeIdByUserIdAsync(int userId)
+            => _db.Employees.AsNoTracking()
+                .Where(e => e.UserId == userId && e.IsActive)
+                .Select(e => (int?)e.Id).SingleOrDefaultAsync();
+
+        public Task<bool> IsUserLinkedAsync(int userId)
+            => _db.Employees.AnyAsync(e => e.UserId == userId);
+
+        public async Task<bool> ChangeUserLinkAsync(int employeeId, int? expectedUserId, int? newUserId)
+        {
+            var query = _db.Employees.Where(e => e.Id == employeeId && e.UserId == expectedUserId);
+            if (newUserId.HasValue)
+                query = query.Where(e => e.IsActive);
+            return await query.ExecuteUpdateAsync(setters => setters.SetProperty(e => e.UserId, newUserId)) == 1;
+        }
+
         public async Task<bool> SaveChangesAsync()
         {
             return await _db.SaveChangesAsync() > 0;

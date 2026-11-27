@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using QLNhanSu.Exceptions;
+using QLNhanSu.Attributes;
 
 namespace QLNhanSu.Controllers
 {
     /// <summary>
     /// Endpoint dùng để kiểm tra Exception Middleware. Có thể xóa khi không cần demo.
     /// </summary>
+    [DevelopmentOnly]
     [ApiController]
     [Route("api/[controller]")]
     public class ErrorsController : ControllerBase

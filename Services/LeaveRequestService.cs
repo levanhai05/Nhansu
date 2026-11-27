@@ -1,3 +1,4 @@
+using QLNhanSu.DTOs.Common;
 using QLNhanSu.DTOs;
 using QLNhanSu.Exceptions;
 using QLNhanSu.Models;
@@ -16,12 +17,12 @@ namespace QLNhanSu.Services
             _current = current;
         }
 
-        public async Task<List<LeaveRequestDto>> GetAllAsync()
+        public async Task<PagedResult<LeaveRequestDto>> GetAllAsync(PaginationParameters page)
         {
             var actor = await _current.GetAsync();
             int? employeeId = actor.Role == "User" ? await _current.EmployeeIdAsync(actor.Id) : null;
-            var items = await _repo.GetAllAsync(employeeId);
-            return items.Select(ToDto).ToList();
+            var items = await _repo.GetAllAsync(page, employeeId);
+            return new PagedResult<LeaveRequestDto>(items.Items.Select(ToDto).ToList(), items.TotalCount, items.PageNumber, items.PageSize);
         }
 
         public async Task<LeaveRequestDto> CreateAsync(LeaveRequestCreateDto dto)

@@ -1,3 +1,4 @@
+using QLNhanSu.DTOs.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QLNhanSu.DTOs;
@@ -24,19 +25,19 @@ namespace QLNhanSu.Controllers
         // GET /api/contracts
         [Authorize(Policy = "AdminOrHR")]
         [HttpGet]
-        public async Task<ActionResult<List<ContractDto>>> GetAll()
+        public async Task<ActionResult<PagedResult<ContractDto>>> GetAll([FromQuery] PaginationParameters page)
         {
-            return Ok(await _contractService.GetAllAsync());
+            return Ok(await _contractService.GetAllAsync(page));
         }
 
         /// <summary>Lấy danh sách hợp đồng của một nhân viên cụ thể. (Admin, HR)</summary>
         /// <param name="employeeId">Id của nhân viên.</param>
         // GET /api/contracts/employee/1
-[Authorize(Policy = "AdminOrHR")]
+        [Authorize(Policy = "AdminOrHR")]
         [HttpGet("employee/{employeeId:int}")]
-        public async Task<ActionResult<List<ContractDto>>> GetByEmployee(int employeeId)
+        public async Task<ActionResult<PagedResult<ContractDto>>> GetByEmployee(int employeeId, [FromQuery] PaginationParameters page)
         {
-            return Ok(await _contractService.GetByEmployeeAsync(employeeId));
+            return Ok(await _contractService.GetByEmployeeAsync(employeeId, page));
         }
 
         /// <summary>Tạo mới một hợp đồng lao động cho nhân viên. Trạng thái mặc định là "Active". (Admin, HR)</summary>

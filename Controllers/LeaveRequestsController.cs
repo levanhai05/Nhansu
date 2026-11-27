@@ -1,3 +1,4 @@
+using QLNhanSu.DTOs.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QLNhanSu.DTOs;
@@ -23,9 +24,9 @@ namespace QLNhanSu.Controllers
         /// <summary>Admin/HR xem tất cả; User chỉ xem đơn của mình.</summary>
         // GET /api/leaverequests
         [HttpGet]
-        public async Task<ActionResult<List<LeaveRequestDto>>> GetAll()
+        public async Task<ActionResult<PagedResult<LeaveRequestDto>>> GetAll([FromQuery] PaginationParameters page)
         {
-            return Ok(await _leaveRequestService.GetAllAsync());
+            return Ok(await _leaveRequestService.GetAllAsync(page));
         }
 
         /// <summary>Nhân viên gửi đơn xin nghỉ phép mới. Trạng thái mặc định là "Pending".</summary>

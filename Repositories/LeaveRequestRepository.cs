@@ -1,3 +1,4 @@
+using QLNhanSu.DTOs.Common;
 using Microsoft.EntityFrameworkCore;
 using QLNhanSu.Data;
 using QLNhanSu.Models;
@@ -13,14 +14,15 @@ namespace QLNhanSu.Repositories
             _db = db;
         }
 
-        public async Task<List<LeaveRequest>> GetAllAsync(int? employeeId = null)
+        public async Task<PagedResult<LeaveRequest>> GetAllAsync(PaginationParameters page, int? employeeId = null)
         {
-            return await _db.LeaveRequests
-                .AsNoTracking()
-                .Where(l => !employeeId.HasValue || l.EmployeeId == employeeId.Value)
-                .Include(l => l.Employee)
-                .OrderByDescending(l => l.CreatedAt)
-                .ToListAsync();
+            var query = _db.LeaveRequests.AsNoTracking().AsQueryable();
+            if (employeeId.HasValue) query = query.Where(x => x.EmployeeId == employeeId.Value);
+            var total = await query.CountAsync();
+            var items = await query.Include(x => x.Employee)
+                .OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id)
+                .Skip(page.Offset).Take(page.PageSize).ToListAsync();
+            return new PagedResult<LeaveRequest>(items, total, page.PageNumber, page.PageSize);
         }
 
         public async Task<LeaveRequest?> GetByIdAsync(int id)

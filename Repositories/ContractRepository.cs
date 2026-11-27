@@ -1,3 +1,4 @@
+using QLNhanSu.DTOs.Common;
 using Microsoft.EntityFrameworkCore;
 using QLNhanSu.Data;
 using QLNhanSu.Models;
@@ -13,23 +14,15 @@ namespace QLNhanSu.Repositories
             _db = db;
         }
 
-        public async Task<List<Contract>> GetAllAsync()
+        public async Task<PagedResult<Contract>> GetAllAsync(PaginationParameters page, int? employeeId = null)
         {
-            return await _db.Contracts
-                .AsNoTracking()
-                .Include(c => c.Employee)
-                .OrderByDescending(c => c.StartDate)
-                .ToListAsync();
-        }
-
-        public async Task<List<Contract>> GetByEmployeeIdAsync(int employeeId)
-        {
-            return await _db.Contracts
-                .AsNoTracking()
-                .Include(c => c.Employee)
-                .Where(c => c.EmployeeId == employeeId)
-                .OrderByDescending(c => c.StartDate)
-                .ToListAsync();
+            var query = _db.Contracts.AsNoTracking().AsQueryable();
+            if (employeeId.HasValue) query = query.Where(x => x.EmployeeId == employeeId.Value);
+            var total = await query.CountAsync();
+            var items = await query.Include(x => x.Employee)
+                .OrderByDescending(x => x.StartDate).ThenByDescending(x => x.Id)
+                .Skip(page.Offset).Take(page.PageSize).ToListAsync();
+            return new PagedResult<Contract>(items, total, page.PageNumber, page.PageSize);
         }
 
         public async Task<Contract?> GetByIdAsync(int id)
