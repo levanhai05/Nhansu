@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using QLNhanSu.Data;
@@ -7,6 +8,7 @@ using QLNhanSu.Middleware;
 using QLNhanSu.Models;
 using QLNhanSu.Repositories;
 using QLNhanSu.Services;
+using QLNhanSu.Settings;
 using Serilog;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -34,17 +36,26 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IFileRepository, FileRepository>();
 builder.Services.AddScoped<IFileService, FileService>();
+builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+builder.Services.AddScoped<IDepartmentService, DepartmentService>();
+builder.Services.AddScoped<IPositionRepository, PositionRepository>();
+builder.Services.AddScoped<IPositionService, PositionService>();
+builder.Services.AddScoped<IContractRepository, ContractRepository>();
+builder.Services.AddScoped<IContractService, ContractService>();
+builder.Services.AddScoped<ILeaveRequestRepository, LeaveRequestRepository>();
+builder.Services.AddScoped<ILeaveRequestService, LeaveRequestService>();
+// Options Pattern: bind + validate cấu hình ngay khi ứng dụng khởi động
+builder.Services.AddOptions<JwtSettings>()
+    .Bind(builder.Configuration.GetSection(JwtSettings.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
-// Đọc cấu hình JwtSettings từ appsettings.json
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"]
-    ?? throw new InvalidOperationException("Chưa cấu hình JwtSettings:SecretKey");
-
-var issuer = jwtSettings["Issuer"]
-    ?? throw new InvalidOperationException("Chưa cấu hình JwtSettings:Issuer");
-
-var audience = jwtSettings["Audience"]
-    ?? throw new InvalidOperationException("Chưa cấu hình JwtSettings:Audience");
+builder.Services.AddOptions<FileSettings>()
+    .Bind(builder.Configuration.GetSection(FileSettings.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 // Cấu hình xác thực JWT
 builder.Services.AddAuthentication(options =>
@@ -52,23 +63,28 @@ builder.Services.AddAuthentication(options =>
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
+.AddJwtBearer();
+
+// TokenValidationParameters lấy từ IOptions<JwtSettings> (không đọc IConfiguration trực tiếp)
+builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+    .Configure<IOptions<JwtSettings>>((options, jwtOptions) =>
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
+        var jwt = jwtOptions.Value;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
 
-        ValidIssuer = issuer,
-        ValidAudience = audience,
-        RoleClaimType = ClaimTypes.Role,
+            ValidIssuer = jwt.Issuer,
+            ValidAudience = jwt.Audience,
+            RoleClaimType = ClaimTypes.Role,
 
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(secretKey))
-    };
-});
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwt.SecretKey))
+        };
+    });
 
 // Cấu hình Swagger (có nút Authorize)
 builder.Services.AddEndpointsApiExplorer();
@@ -107,13 +123,28 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+// Cấu hình CORS: chỉ cho phép các origin Frontend khai báo trong appsettings.json (Cors:AllowedOrigins)
+const string CorsPolicyName = "AllowFrontend";
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? Array.Empty<string>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(CorsPolicyName, policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()   // cho phép header Authorization: Bearer <token>
+              .AllowAnyMethod();  // GET, POST, PUT, DELETE, OPTIONS (preflight)
+    });
+});
+
 var app = builder.Build();
 
 // Tự tạo database nếu chưa tồn tại + seed đủ 500 tài khoản mẫu
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 
     const int TotalUsers = 500;
 
@@ -178,6 +209,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// CORS phải đặt trước Authentication/Authorization để preflight (OPTIONS) không bị chặn 401
+app.UseCors(CorsPolicyName);
 
 // Xác thực JWT trước khi kiểm tra quyền
 app.UseAuthentication();

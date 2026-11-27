@@ -1,9 +1,9 @@
+// Đặt tại: Controllers/EmployeesController.cs (thay file cũ)
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using QLNhanSu.Data;
 using QLNhanSu.DTOs;
-using QLNhanSu.Models;
+using QLNhanSu.DTOs.Common;
+using QLNhanSu.Services;
 
 namespace QLNhanSu.Controllers
 {
@@ -15,155 +15,75 @@ namespace QLNhanSu.Controllers
     [ApiController]
     public class EmployeesController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IEmployeeService _employeeService;
 
-        public EmployeesController(AppDbContext context)
+        public EmployeesController(IEmployeeService employeeService)
         {
-            _context = context;
+            _employeeService = employeeService;
         }
 
-        /// <summary>
-        /// Lấy danh sách toàn bộ nhân viên (kèm tên khoa/phòng ban và chức vụ).
-        /// </summary>
-        /// <returns>Danh sách nhân viên.</returns>
-        // GET /api/employees
+        /// <summary>Lấy danh sách nhân viên có phân trang, tìm kiếm, lọc và sắp xếp.</summary>
+        /// <param name="queryParams">PageNumber, PageSize (tối đa 50), SearchTerm (họ tên/email), DepartmentId, PositionId, IsActive, SortBy (fullname, email, hiredate), IsDescending.</param>
+        /// <response code="200">Danh sách nhân viên đã phân trang.</response>
+        // GET /api/employees?pageNumber=1&pageSize=10&searchTerm=an&departmentId=1
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<ActionResult<PagedResult<EmployeeDto>>> GetAll([FromQuery] EmployeeQueryParameters queryParams)
         {
-            var items = await _context.Employees
-                .Include(e => e.Department)
-                .Include(e => e.Position)
-                .Select(e => ToDto(e))
-                .ToListAsync();
-            return Ok(items);
+            return Ok(await _employeeService.GetAllAsync(queryParams));
         }
 
-        /// <summary>
-        /// Lấy thông tin chi tiết một nhân viên theo Id.
-        /// </summary>
+        /// <summary>Lấy thông tin chi tiết một nhân viên theo Id.</summary>
         /// <param name="id">Id của nhân viên.</param>
-        /// <returns>Thông tin nhân viên.</returns>
-        /// <response code="404">Không tìm thấy nhân viên với Id tương ứng.</response>
+        /// <response code="404">Không tìm thấy nhân viên.</response>
         // GET /api/employees/1
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<EmployeeDto>> GetById(int id)
         {
-            var e = await _context.Employees
-                .Include(x => x.Department)
-                .Include(x => x.Position)
-                .FirstOrDefaultAsync(x => x.Id == id);
-
-            if (e == null) throw new KeyNotFoundException($"Không tìm thấy nhân viên có Id = {id}.");
-            return Ok(ToDto(e));
+            return Ok(await _employeeService.GetByIdAsync(id));
         }
 
-        /// <summary>
-        /// Tạo mới một nhân viên. (Admin, HR)
-        /// </summary>
+        /// <summary>Tạo mới một nhân viên. (Admin, HR)</summary>
         /// <param name="dto">Thông tin nhân viên cần tạo.</param>
-        /// <returns>Nhân viên vừa được tạo.</returns>
         /// <response code="201">Tạo thành công.</response>
         /// <response code="400">Dữ liệu không hợp lệ hoặc DepartmentId/PositionId không tồn tại.</response>
         /// <response code="403">Không đủ quyền.</response>
         // POST /api/employees
         [Authorize(Roles = "Admin,HR")]
         [HttpPost]
-        public async Task<IActionResult> Create(EmployeeCreateDto dto)
+        public async Task<ActionResult<EmployeeDto>> Create(EmployeeCreateDto dto)
         {
-            var deptExists = await _context.Departments.AnyAsync(d => d.Id == dto.DepartmentId);
-            if (!deptExists) throw new InvalidOperationException("DepartmentId không tồn tại.");
-
-            var posExists = await _context.Positions.AnyAsync(p => p.Id == dto.PositionId);
-            if (!posExists) throw new InvalidOperationException("PositionId không tồn tại.");
-
-            var employee = new Employee
-            {
-                FullName = dto.FullName,
-                DateOfBirth = dto.DateOfBirth,
-                Gender = dto.Gender,
-                Email = dto.Email,
-                Phone = dto.Phone,
-                Address = dto.Address,
-                HireDate = dto.HireDate,
-                DepartmentId = dto.DepartmentId,
-                PositionId = dto.PositionId,
-                IsActive = true
-            };
-
-            _context.Employees.Add(employee);
-            await _context.SaveChangesAsync();
-
-            await _context.Entry(employee).Reference(x => x.Department).LoadAsync();
-            await _context.Entry(employee).Reference(x => x.Position).LoadAsync();
-
-            return CreatedAtAction(nameof(GetById), new { id = employee.Id }, ToDto(employee));
+            var created = await _employeeService.CreateAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
-        /// <summary>
-        /// Cập nhật thông tin một nhân viên. (Admin, HR)
-        /// </summary>
+        /// <summary>Cập nhật thông tin một nhân viên. (Admin, HR)</summary>
         /// <param name="id">Id của nhân viên cần cập nhật.</param>
-        /// <param name="dto">Thông tin mới của nhân viên.</param>
+        /// <param name="dto">Thông tin mới.</param>
         /// <response code="204">Cập nhật thành công.</response>
+        /// <response code="400">DepartmentId/PositionId không tồn tại.</response>
         /// <response code="403">Không đủ quyền.</response>
-        /// <response code="404">Không tìm thấy nhân viên với Id tương ứng.</response>
+        /// <response code="404">Không tìm thấy nhân viên.</response>
         // PUT /api/employees/1
         [Authorize(Roles = "Admin,HR")]
-        [HttpPut("{id}")]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, EmployeeCreateDto dto)
         {
-            var employee = await _context.Employees.FindAsync(id);
-            if (employee == null) throw new KeyNotFoundException($"Không tìm thấy nhân viên có Id = {id}.");
-
-            employee.FullName = dto.FullName;
-            employee.DateOfBirth = dto.DateOfBirth;
-            employee.Gender = dto.Gender;
-            employee.Email = dto.Email;
-            employee.Phone = dto.Phone;
-            employee.Address = dto.Address;
-            employee.HireDate = dto.HireDate;
-            employee.DepartmentId = dto.DepartmentId;
-            employee.PositionId = dto.PositionId;
-
-            await _context.SaveChangesAsync();
+            await _employeeService.UpdateAsync(id, dto);
             return NoContent();
         }
 
-        /// <summary>
-        /// Ngừng hoạt động (nghỉ việc) một nhân viên — không xoá hẳn khỏi hệ thống. (Admin)
-        /// </summary>
+        /// <summary>Cho nhân viên nghỉ việc (IsActive = false), không xoá khỏi hệ thống. (Admin)</summary>
         /// <param name="id">Id của nhân viên.</param>
         /// <response code="204">Cập nhật thành công.</response>
         /// <response code="403">Không đủ quyền.</response>
-        /// <response code="404">Không tìm thấy nhân viên với Id tương ứng.</response>
-        // DELETE /api/employees/1  (nghỉ việc -> khoá tài khoản thay vì xoá hẳn)
+        /// <response code="404">Không tìm thấy nhân viên.</response>
+        // DELETE /api/employees/1
         [Authorize(Roles = "Admin")]
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Deactivate(int id)
         {
-            var employee = await _context.Employees.FindAsync(id);
-            if (employee == null) throw new KeyNotFoundException($"Không tìm thấy nhân viên có Id = {id}.");
-
-            _context.Employees.Remove(employee);
-            await _context.SaveChangesAsync();
+            await _employeeService.DeactivateAsync(id);
             return NoContent();
         }
-
-        private static EmployeeDto ToDto(Employee e) => new EmployeeDto
-        {
-            Id = e.Id,
-            FullName = e.FullName,
-            DateOfBirth = e.DateOfBirth,
-            Gender = e.Gender,
-            Email = e.Email,
-            Phone = e.Phone,
-            Address = e.Address,
-            HireDate = e.HireDate,
-            IsActive = e.IsActive,
-            DepartmentId = e.DepartmentId,
-            DepartmentName = e.Department?.Name,
-            PositionId = e.PositionId,
-            PositionName = e.Position?.Name
-        };
     }
 }

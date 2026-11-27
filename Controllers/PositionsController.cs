@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using QLNhanSu.Data;
 using QLNhanSu.DTOs;
-using QLNhanSu.Models;
+using QLNhanSu.Services;
 
 namespace QLNhanSu.Controllers
 {
@@ -15,81 +13,68 @@ namespace QLNhanSu.Controllers
     [ApiController]
     public class PositionsController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IPositionService _positionService;
 
-        public PositionsController(AppDbContext context)
+        public PositionsController(IPositionService positionService)
         {
-            _context = context;
+            _positionService = positionService;
         }
 
         /// <summary>Lấy danh sách toàn bộ Chức vụ.</summary>
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<ActionResult<List<PositionDto>>> GetAll()
         {
-            var items = await _context.Positions
-                .Select(p => new PositionDto { Id = p.Id, Name = p.Name, BaseSalary = p.BaseSalary })
-                .ToListAsync();
-            return Ok(items);
+            return Ok(await _positionService.GetAllAsync());
         }
 
         /// <summary>Lấy thông tin một Chức vụ theo Id.</summary>
         /// <param name="id">Id của Chức vụ.</param>
         /// <response code="404">Không tìm thấy.</response>
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<PositionDto>> GetById(int id)
         {
-            var p = await _context.Positions.FindAsync(id);
-            if (p == null) throw new KeyNotFoundException($"Không tìm thấy Chức vụ có Id = {id}.");
-            return Ok(new PositionDto { Id = p.Id, Name = p.Name, BaseSalary = p.BaseSalary });
+            return Ok(await _positionService.GetByIdAsync(id));
         }
 
-        /// <summary>Tạo mới một Chức vụ.</summary>
+        /// <summary>Tạo mới một Chức vụ. (Admin, HR)</summary>
         /// <param name="dto">Thông tin Chức vụ cần tạo.</param>
         /// <response code="201">Tạo thành công.</response>
         /// <response code="400">Dữ liệu không hợp lệ.</response>
+        /// <response code="403">Không đủ quyền.</response>
+        [Authorize(Roles = "Admin,HR")]
         [HttpPost]
-        public async Task<IActionResult> Create(PositionCreateDto dto)
+        public async Task<ActionResult<PositionDto>> Create(PositionCreateDto dto)
         {
-            var p = new Position { Name = dto.Name, BaseSalary = dto.BaseSalary };
-            _context.Positions.Add(p);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetById), new { id = p.Id },
-                new PositionDto { Id = p.Id, Name = p.Name, BaseSalary = p.BaseSalary });
+            var created = await _positionService.CreateAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
-        /// <summary>Cập nhật thông tin một Chức vụ.</summary>
+        /// <summary>Cập nhật thông tin một Chức vụ. (Admin, HR)</summary>
         /// <param name="id">Id của Chức vụ cần cập nhật.</param>
         /// <param name="dto">Thông tin mới.</param>
         /// <response code="204">Cập nhật thành công.</response>
+        /// <response code="403">Không đủ quyền.</response>
         /// <response code="404">Không tìm thấy.</response>
-        [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,HR")]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, PositionCreateDto dto)
         {
-            var p = await _context.Positions.FindAsync(id);
-            if (p == null) throw new KeyNotFoundException($"Không tìm thấy Chức vụ có Id = {id}.");
-            p.Name = dto.Name;
-            p.BaseSalary = dto.BaseSalary;
-            await _context.SaveChangesAsync();
+            await _positionService.UpdateAsync(id, dto);
             return NoContent();
         }
 
-        /// <summary>Xoá một Chức vụ.</summary>
+        /// <summary>Xoá một Chức vụ (chỉ khi không còn nhân viên). (Admin)</summary>
         /// <param name="id">Id của Chức vụ cần xoá.</param>
         /// <response code="204">Xoá thành công.</response>
+        /// <response code="400">Chức vụ còn nhân viên.</response>
+        /// <response code="403">Không đủ quyền.</response>
         /// <response code="404">Không tìm thấy.</response>
         [Authorize(Roles = "Admin")]
-        [HttpDelete("{id}")]
-public async Task<IActionResult> Delete(int id)
-{
-    var p = await _context.Positions.FindAsync(id);
-    if (p == null) throw new KeyNotFoundException($"Không tìm thấy Chức vụ có Id = {id}.");
-
-    if (await _context.Employees.AnyAsync(e => e.PositionId == id))
-        throw new InvalidOperationException("Không thể xoá Chức vụ đang có nhân viên.");
-
-    _context.Positions.Remove(p);
-    await _context.SaveChangesAsync();
-    return NoContent();
-}
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            await _positionService.DeleteAsync(id);
+            return NoContent();
+        }
     }
 }

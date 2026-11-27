@@ -2,12 +2,14 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using QLNhanSu.Controllers;
 using QLNhanSu.DTOs;
 using QLNhanSu.DTOs.Common;
 using QLNhanSu.Models;
 using QLNhanSu.Repositories;
+using QLNhanSu.Settings;
 
 namespace QLNhanSu.Services
 {
@@ -16,12 +18,12 @@ namespace QLNhanSu.Services
         private static readonly string[] AllowedRoles = { "User", "HR", "Admin" };
 
         private readonly IUserRepository _userRepo;
-        private readonly IConfiguration _config;
+        private readonly JwtSettings _jwt;
 
-        public UserService(IUserRepository userRepo, IConfiguration config)
+        public UserService(IUserRepository userRepo, IOptions<JwtSettings> jwtOptions)
         {
             _userRepo = userRepo;
-            _config = config;
+            _jwt = jwtOptions.Value;
         }
 
         public async Task<PagedResult<UserResponseDto>> GetAllAsync(UserQueryParameters queryParams)
@@ -172,9 +174,7 @@ namespace QLNhanSu.Services
 
         private string CreateToken(User user)
         {
-            var jwt = _config.GetSection("JwtSettings");
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["SecretKey"]!));
-            var expiry = int.TryParse(jwt["ExpiryMinutes"], out var m) ? m : 60;
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.SecretKey));
 
             var claims = new List<Claim>
             {
@@ -185,10 +185,10 @@ namespace QLNhanSu.Services
             };
 
             var token = new JwtSecurityToken(
-                issuer: jwt["Issuer"],
-                audience: jwt["Audience"],
+                issuer: _jwt.Issuer,
+                audience: _jwt.Audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(expiry),
+                expires: DateTime.UtcNow.AddMinutes(_jwt.ExpiryMinutes),
                 signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
 
             return new JwtSecurityTokenHandler().WriteToken(token);

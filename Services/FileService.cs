@@ -1,20 +1,21 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 using QLNhanSu.Models;
 using QLNhanSu.Repositories;
+using QLNhanSu.Settings;
 using static QLNhanSu.DTOs.FileUploadDbDto;
 
 namespace QLNhanSu.Services
 {
     public class FileService : IFileService
     {
-        private const long MaxFileSize = 1 * 1024 * 1024; // 1MB
-        private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp" };
-
         private readonly IFileRepository _fileRepository;
+        private readonly FileSettings _settings;
 
-        public FileService(IFileRepository fileRepository)
+        public FileService(IFileRepository fileRepository, IOptions<FileSettings> options)
         {
             _fileRepository = fileRepository;
+            _settings = options.Value;
         }
 
         public async Task<FileResponseDto> UploadFileAsync(IFormFile file)
@@ -22,12 +23,14 @@ namespace QLNhanSu.Services
             if (file == null || file.Length == 0)
                 throw new ArgumentException("File không hợp lệ.");
 
-            if (file.Length > MaxFileSize)
-                throw new ArgumentException("File vượt quá dung lượng tối đa 1MB.");
+            if (file.Length > _settings.MaxFileSizeInBytes)
+                throw new ArgumentException($"File vượt quá dung lượng tối đa {_settings.MaxFileSizeInMB}MB.");
 
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (!AllowedExtensions.Contains(extension) || !file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException("Chỉ cho phép upload file ảnh (jpg, jpeg, png, gif, webp, bmp).");
+            var allowed = _settings.AllowedExtensions;
+            if (!allowed.Contains(extension, StringComparer.OrdinalIgnoreCase)
+                || !file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException($"Chỉ cho phép upload file ảnh ({string.Join(", ", allowed.Select(e => e.TrimStart('.')))}).");
 
             using var memoryStream = new MemoryStream();
             await file.CopyToAsync(memoryStream);

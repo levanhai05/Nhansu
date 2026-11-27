@@ -1,100 +1,90 @@
+// Đặt tại: Controllers/DepartmentsController.cs (thay toàn bộ nội dung file hiện tại)
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using QLNhanSu.Data;
 using QLNhanSu.DTOs;
-using QLNhanSu.Models;
+using QLNhanSu.Services;
 
 namespace QLNhanSu.Controllers
 {
     /// <summary>
-    /// Quản lý Khoa/Phòng ban trong trường.
+    /// Quản lý Khoa/Phòng ban: xem danh sách, xem chi tiết, thêm, sửa, xoá.
     /// </summary>
     [Authorize]
-[Route("api/[controller]")]
-[ApiController]
+    [Route("api/[controller]")]
+    [ApiController]
     public class DepartmentsController : ControllerBase
-    
     {
-        private readonly AppDbContext _context;
+        private readonly IDepartmentService _departmentService;
 
-        public DepartmentsController(AppDbContext context)
+        public DepartmentsController(IDepartmentService departmentService)
         {
-            _context = context;
+            _departmentService = departmentService;
         }
 
-        /// <summary>Lấy danh sách toàn bộ Khoa/Phòng ban.</summary>
+        /// <summary>Lấy danh sách Khoa/Phòng ban.</summary>
+        /// <response code="200">Trả về danh sách.</response>
+        /// <response code="401">Chưa đăng nhập hoặc token không hợp lệ.</response>
         // GET /api/departments
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<ActionResult<List<DepartmentDto>>> GetAll()
         {
-            var items = await _context.Departments
-                .Select(d => new DepartmentDto { Id = d.Id, Name = d.Name, Description = d.Description })
-                .ToListAsync();
-            return Ok(items);
+            return Ok(await _departmentService.GetAllAsync());
         }
 
-        /// <summary>Lấy thông tin một Khoa/Phòng ban theo Id.</summary>
+        /// <summary>Lấy chi tiết một Khoa/Phòng ban theo Id.</summary>
         /// <param name="id">Id của Khoa/Phòng ban.</param>
+        /// <response code="200">Trả về thông tin Khoa/Phòng ban.</response>
         /// <response code="404">Không tìm thấy.</response>
         // GET /api/departments/1
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<DepartmentDto>> GetById(int id)
         {
-            var d = await _context.Departments.FindAsync(id);
-            if (d == null) throw new KeyNotFoundException($"Không tìm thấy Khoa/Phòng ban có Id = {id}.");
-            return Ok(new DepartmentDto { Id = d.Id, Name = d.Name, Description = d.Description });
+            return Ok(await _departmentService.GetByIdAsync(id));
         }
 
-        /// <summary>Tạo mới một Khoa/Phòng ban.</summary>
-        /// <param name="dto">Thông tin Khoa/Phòng ban cần tạo.</param>
+        /// <summary>Tạo mới Khoa/Phòng ban. (Admin, HR)</summary>
+        /// <param name="dto">Tên và mô tả.</param>
         /// <response code="201">Tạo thành công.</response>
-        /// <response code="400">Dữ liệu không hợp lệ.</response>
+        /// <response code="400">Dữ liệu không hợp lệ hoặc trùng tên.</response>
+        /// <response code="403">Không đủ quyền.</response>
         // POST /api/departments
+        [Authorize(Roles = "Admin,HR")]
         [HttpPost]
-        public async Task<IActionResult> Create(DepartmentCreateDto dto)
+        public async Task<ActionResult<DepartmentDto>> Create(DepartmentCreateDto dto)
         {
-            var d = new Department { Name = dto.Name, Description = dto.Description };
-            _context.Departments.Add(d);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetById), new { id = d.Id },
-                new DepartmentDto { Id = d.Id, Name = d.Name, Description = d.Description });
+            var created = await _departmentService.CreateAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
-        /// <summary>Cập nhật thông tin một Khoa/Phòng ban.</summary>
-        /// <param name="id">Id của Khoa/Phòng ban cần cập nhật.</param>
+        /// <summary>Cập nhật Khoa/Phòng ban. (Admin, HR)</summary>
+        /// <param name="id">Id cần cập nhật.</param>
         /// <param name="dto">Thông tin mới.</param>
         /// <response code="204">Cập nhật thành công.</response>
+        /// <response code="400">Dữ liệu không hợp lệ hoặc trùng tên.</response>
+        /// <response code="403">Không đủ quyền.</response>
         /// <response code="404">Không tìm thấy.</response>
         // PUT /api/departments/1
-        [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,HR")]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, DepartmentCreateDto dto)
         {
-            var d = await _context.Departments.FindAsync(id);
-            if (d == null) throw new KeyNotFoundException($"Không tìm thấy Khoa/Phòng ban có Id = {id}.");
-            d.Name = dto.Name;
-            d.Description = dto.Description;
-            await _context.SaveChangesAsync();
+            await _departmentService.UpdateAsync(id, dto);
             return NoContent();
         }
 
-        /// <summary>Xoá một Khoa/Phòng ban.</summary>
-        /// <param name="id">Id của Khoa/Phòng ban cần xoá.</param>
+        /// <summary>Xoá Khoa/Phòng ban (chỉ khi không còn nhân viên). (Admin)</summary>
+        /// <param name="id">Id cần xoá.</param>
         /// <response code="204">Xoá thành công.</response>
+        /// <response code="400">Khoa/Phòng ban còn nhân viên.</response>
+        /// <response code="403">Không đủ quyền.</response>
         /// <response code="404">Không tìm thấy.</response>
         // DELETE /api/departments/1
-        [HttpDelete("{id}")]
-public async Task<IActionResult> Delete(int id)
-{
-    var d = await _context.Departments.FindAsync(id);
-    if (d == null) throw new KeyNotFoundException($"Không tìm thấy Khoa/Phòng ban có Id = {id}.");
-
-    if (await _context.Employees.AnyAsync(e => e.DepartmentId == id))
-        throw new InvalidOperationException("Không thể xoá Khoa/Phòng ban đang có nhân viên.");
-
-    _context.Departments.Remove(d);
-    await _context.SaveChangesAsync();
-    return NoContent();
-}
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            await _departmentService.DeleteAsync(id);
+            return NoContent();
+        }
     }
 }
