@@ -13,6 +13,8 @@ namespace QLNhanSu.Services
 {
     public class UserService : IUserService
     {
+        private static readonly string[] AllowedRoles = { "User", "HR", "Admin" };
+
         private readonly IUserRepository _userRepo;
         private readonly IConfiguration _config;
 
@@ -50,6 +52,13 @@ namespace QLNhanSu.Services
                 return (false, "Username hoặc Email đã được sử dụng.", null);
             }
 
+            // Role bỏ trống -> "User"; có truyền thì chỉ chấp nhận các role hợp lệ
+            var role = NormalizeRole(request.Role, defaultRole: "User");
+            if (role == null)
+            {
+                return (false, "Role không hợp lệ. Chỉ chấp nhận: User, HR, Admin.", null);
+            }
+
             CreatePasswordHash(request.Password, out byte[] passwordHash, out byte[] passwordSalt);
 
             var newUser = new User
@@ -58,7 +67,7 @@ namespace QLNhanSu.Services
                 Email = request.Email,
                 PasswordHash = passwordHash,
                 PasswordSalt = passwordSalt,
-                Role = string.IsNullOrEmpty(request.Role) ? "User" : request.Role,
+                Role = role,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -87,8 +96,17 @@ namespace QLNhanSu.Services
                 return (false, $"Không tìm thấy người dùng có Id = {id}");
             }
 
+            if (!string.IsNullOrWhiteSpace(request.Role))
+            {
+                var newRole = NormalizeRole(request.Role, defaultRole: "User");
+                if (newRole == null)
+                {
+                    return (false, "Role không hợp lệ. Chỉ chấp nhận: User, HR, Admin.");
+                }
+                user.Role = newRole;
+            }
+
             if (!string.IsNullOrEmpty(request.Email)) user.Email = request.Email;
-            if (!string.IsNullOrEmpty(request.Role)) user.Role = request.Role;
             if (!string.IsNullOrEmpty(request.Username)) user.Username = request.Username;
 
             if (!string.IsNullOrEmpty(request.Password))
@@ -119,6 +137,16 @@ namespace QLNhanSu.Services
         }
 
         // Helper Private Methods
+
+        // Trả về role chuẩn hoá (đúng hoa/thường), hoặc null nếu role không hợp lệ.
+        private static string? NormalizeRole(string? role, string defaultRole)
+        {
+            if (string.IsNullOrWhiteSpace(role)) return defaultRole;
+
+            return AllowedRoles.FirstOrDefault(r =>
+                r.Equals(role.Trim(), StringComparison.OrdinalIgnoreCase));
+        }
+
         private static UserResponseDto MapToResponseDto(User user) => new()
         {
             Id = user.Id,

@@ -58,13 +58,15 @@ namespace QLNhanSu.Controllers
         }
 
         /// <summary>
-        /// Tạo mới một nhân viên.
+        /// Tạo mới một nhân viên. (Admin, HR)
         /// </summary>
         /// <param name="dto">Thông tin nhân viên cần tạo.</param>
         /// <returns>Nhân viên vừa được tạo.</returns>
         /// <response code="201">Tạo thành công.</response>
         /// <response code="400">Dữ liệu không hợp lệ hoặc DepartmentId/PositionId không tồn tại.</response>
+        /// <response code="403">Không đủ quyền.</response>
         // POST /api/employees
+        [Authorize(Roles = "Admin,HR")]
         [HttpPost]
         public async Task<IActionResult> Create(EmployeeCreateDto dto)
         {
@@ -98,13 +100,15 @@ namespace QLNhanSu.Controllers
         }
 
         /// <summary>
-        /// Cập nhật thông tin một nhân viên.
+        /// Cập nhật thông tin một nhân viên. (Admin, HR)
         /// </summary>
         /// <param name="id">Id của nhân viên cần cập nhật.</param>
         /// <param name="dto">Thông tin mới của nhân viên.</param>
         /// <response code="204">Cập nhật thành công.</response>
+        /// <response code="403">Không đủ quyền.</response>
         /// <response code="404">Không tìm thấy nhân viên với Id tương ứng.</response>
         // PUT /api/employees/1
+        [Authorize(Roles = "Admin,HR")]
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, EmployeeCreateDto dto)
         {
@@ -126,10 +130,11 @@ namespace QLNhanSu.Controllers
         }
 
         /// <summary>
-        /// Ngừng hoạt động (nghỉ việc) một nhân viên — không xoá hẳn khỏi hệ thống.
+        /// Ngừng hoạt động (nghỉ việc) một nhân viên — không xoá hẳn khỏi hệ thống. (Admin)
         /// </summary>
         /// <param name="id">Id của nhân viên.</param>
         /// <response code="204">Cập nhật thành công.</response>
+        /// <response code="403">Không đủ quyền.</response>
         /// <response code="404">Không tìm thấy nhân viên với Id tương ứng.</response>
         // DELETE /api/employees/1  (nghỉ việc -> khoá tài khoản thay vì xoá hẳn)
         [Authorize(Roles = "Admin")]

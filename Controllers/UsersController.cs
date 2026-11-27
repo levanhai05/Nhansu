@@ -21,10 +21,12 @@ namespace QLNhanSu.Controllers
             _userService = userService;
         }
 
-        /// <summary>Lấy danh sách người dùng có phân trang, tìm kiếm, lọc theo role và sắp xếp.</summary>
+        /// <summary>Lấy danh sách người dùng có phân trang, tìm kiếm, lọc theo role và sắp xếp. (Admin, HR)</summary>
         /// <param name="queryParams">PageNumber, PageSize (tối đa 50), SearchTerm (Username/Email), Role, SortBy (username, email, createdat), IsDescending.</param>
         /// <response code="200">Trả về danh sách người dùng đã phân trang.</response>
         /// <response code="401">Chưa đăng nhập hoặc token không hợp lệ.</response>
+        /// <response code="403">Không đủ quyền.</response>
+        [Authorize(Roles = "Admin,HR")]
         [HttpGet]
         public async Task<ActionResult<PagedResult<UserResponseDto>>> GetAll([FromQuery] UserQueryParameters queryParams)
         {
@@ -32,10 +34,12 @@ namespace QLNhanSu.Controllers
             return Ok(result);
         }
 
-        /// <summary>Lấy thông tin một người dùng theo Id.</summary>
+        /// <summary>Lấy thông tin một người dùng theo Id. (Admin, HR)</summary>
         /// <param name="id">Id của người dùng.</param>
         /// <response code="200">Trả về thông tin người dùng.</response>
+        /// <response code="403">Không đủ quyền.</response>
         /// <response code="404">Không tìm thấy người dùng.</response>
+        [Authorize(Roles = "Admin,HR")]
         [HttpGet("{id:int}")]
         public async Task<ActionResult<UserResponseDto>> GetById(int id)
         {
@@ -48,10 +52,12 @@ namespace QLNhanSu.Controllers
             return Ok(user);
         }
 
-        /// <summary>Tạo mới một tài khoản người dùng.</summary>
+        /// <summary>Tạo mới một tài khoản người dùng. (Admin)</summary>
         /// <param name="request">Username, Email, Password và Role (mặc định là "User" nếu bỏ trống).</param>
         /// <response code="201">Tạo thành công.</response>
-        /// <response code="400">Username hoặc Email đã được sử dụng.</response>
+        /// <response code="400">Username/Email đã được sử dụng hoặc Role không hợp lệ.</response>
+        /// <response code="403">Không đủ quyền.</response>
+        [Authorize(Roles = "Admin")]
         [HttpPost("register")]
         public async Task<ActionResult<UserResponseDto>> Register([FromBody] UserRegisterDto request)
         {
@@ -64,11 +70,13 @@ namespace QLNhanSu.Controllers
             return CreatedAtAction(nameof(GetById), new { id = result.Data!.Id }, result.Data);
         }
 
-        /// <summary>Cập nhật thông tin một người dùng. Trường nào để trống thì giữ nguyên giá trị cũ.</summary>
+        /// <summary>Cập nhật thông tin một người dùng. Trường nào để trống thì giữ nguyên giá trị cũ. (Admin)</summary>
         /// <param name="id">Id của người dùng cần cập nhật.</param>
         /// <param name="request">Thông tin mới (Username, Email, Password, Role).</param>
         /// <response code="200">Cập nhật thành công.</response>
-        /// <response code="404">Không tìm thấy người dùng.</response>
+        /// <response code="403">Không đủ quyền.</response>
+        /// <response code="404">Không tìm thấy người dùng hoặc Role không hợp lệ.</response>
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, [FromBody] UserRegisterDto request)
         {
@@ -81,10 +89,12 @@ namespace QLNhanSu.Controllers
             return Ok(new { message = result.Message });
         }
 
-        /// <summary>Xoá một người dùng.</summary>
+        /// <summary>Xoá một người dùng. (Admin)</summary>
         /// <param name="id">Id của người dùng cần xoá.</param>
         /// <response code="200">Xoá thành công.</response>
+        /// <response code="403">Không đủ quyền.</response>
         /// <response code="404">Không tìm thấy người dùng.</response>
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
