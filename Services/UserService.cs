@@ -6,6 +6,8 @@ using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using QLNhanSu.DTOs;
+using QLNhanSu.Exceptions;
+using Microsoft.Data.SqlClient;
 using QLNhanSu.DTOs.Common;
 using QLNhanSu.Models;
 using QLNhanSu.Repositories;
@@ -135,18 +137,26 @@ namespace QLNhanSu.Services
                 return (false, $"Không tìm thấy người dùng có Id = {id}");
             }
 
+            var username = string.IsNullOrWhiteSpace(request.Username)
+                ? user.Username : request.Username.Trim();
+            var email = string.IsNullOrWhiteSpace(request.Email)
+                ? user.Email : request.Email.Trim();
+
+            if (await _userRepo.ExistsForOtherUserAsync(id, username, email))
+                throw new AppException("Username hoặc Email đã được sử dụng.", 409);
+
             if (!string.IsNullOrWhiteSpace(request.Role))
             {
                 var newRole = NormalizeRole(request.Role, defaultRole: "User");
                 if (newRole == null)
                 {
-                    return (false, "Role không hợp lệ. Chỉ chấp nhận: User, HR, Admin.");
+                    throw new BadRequestException("Role không hợp lệ. Chỉ chấp nhận: User, HR, Admin.");
                 }
                 user.Role = newRole;
             }
 
-            if (!string.IsNullOrEmpty(request.Email)) user.Email = request.Email;
-            if (!string.IsNullOrEmpty(request.Username)) user.Username = request.Username;
+            user.Email = email;
+            user.Username = username;
 
             if (!string.IsNullOrEmpty(request.Password))
             {
@@ -159,7 +169,19 @@ namespace QLNhanSu.Services
             user.RefreshTokenHash = null;
             user.RefreshTokenExpiresAt = null;
             _userRepo.Update(user);
-            await _userRepo.SaveChangesAsync();
+            try
+            {
+                await _userRepo.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                throw new AppException("Tài khoản vừa được cập nhật. Vui lòng thử lại.", 409);
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is SqlException sql &&
+                sql.Number is 2601 or 2627)
+            {
+                throw new AppException("Dữ liệu tài khoản bị trùng.", 409);
+            }
 
             return (true, $"Cập nhật thành công người dùng Id = {id}");
         }

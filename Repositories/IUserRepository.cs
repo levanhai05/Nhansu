@@ -8,6 +8,7 @@ namespace QLNhanSu.Repositories
         Task<User?> GetByRefreshTokenHashAsync(string hash);
         Task<User?> GetByIdAsync(int id);
         Task<User?> GetByUsernameOrEmailAsync(string username, string email);
+        Task<bool> ExistsForOtherUserAsync(int id, string username, string email);
         Task AddAsync(User user);
         void Update(User user);
         void Delete(User user);

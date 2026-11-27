@@ -13,10 +13,11 @@ namespace QLNhanSu.Repositories
             _db = db;
         }
 
-        public async Task<List<LeaveRequest>> GetAllAsync()
+        public async Task<List<LeaveRequest>> GetAllAsync(int? employeeId = null)
         {
             return await _db.LeaveRequests
                 .AsNoTracking()
+                .Where(l => !employeeId.HasValue || l.EmployeeId == employeeId.Value)
                 .Include(l => l.Employee)
                 .OrderByDescending(l => l.CreatedAt)
                 .ToListAsync();
@@ -37,6 +38,14 @@ namespace QLNhanSu.Repositories
         public async Task AddAsync(LeaveRequest leaveRequest)
         {
             await _db.LeaveRequests.AddAsync(leaveRequest);
+        }
+
+        public async Task<bool> TryResolvePendingAsync(int id, string status)
+        {
+            var affected = await _db.LeaveRequests
+                .Where(l => l.Id == id && l.Status == "Pending")
+                .ExecuteUpdateAsync(setters => setters.SetProperty(l => l.Status, status));
+            return affected == 1;
         }
 
         public async Task<bool> SaveChangesAsync()

@@ -31,6 +31,12 @@ namespace QLNhanSu.Services
             if (!await _repo.EmployeeExistsAsync(dto.EmployeeId))
                 throw new BadRequestException("EmployeeId không tồn tại.");
 
+            if (dto.StartDate == default || dto.EndDate == DateTime.MinValue)
+                throw new BadRequestException("Ngày hợp đồng không hợp lệ.");
+
+            if (dto.EndDate.HasValue && dto.EndDate.Value.Date < dto.StartDate.Date)
+                throw new BadRequestException("Ngày kết thúc không được trước ngày bắt đầu.");
+
             var contract = new Contract
             {
                 EmployeeId = dto.EmployeeId,

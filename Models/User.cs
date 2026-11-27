@@ -10,6 +10,8 @@ namespace QLNhanSu.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
+        public Employee? Employee { get; set; }
+
         [Required]
         [MaxLength(50)]
         public string Username { get; set; } = string.Empty;

@@ -13,15 +13,18 @@ namespace QLNhanSu.Services
     {
         private readonly IFileRepository _fileRepository;
         private readonly FileSettings _settings;
+        private readonly CurrentUserService _current;
 
-        public FileService(IFileRepository fileRepository, IOptions<FileSettings> options)
+        public FileService(IFileRepository fileRepository, IOptions<FileSettings> options, CurrentUserService current)
         {
             _fileRepository = fileRepository;
             _settings = options.Value;
+            _current = current;
         }
 
         public async Task<FileResponseDto> UploadFileAsync(IFormFile file)
         {
+            var actor = await _current.GetAsync();
             if (file == null || file.Length == 0)
                 throw new ArgumentException("File không hợp lệ.");
 
@@ -77,6 +80,7 @@ namespace QLNhanSu.Services
 
             var storedFile = new StoredFile
             {
+                OwnerUserId = actor.Id,
                 FileName = Path.GetFileName(file.FileName),
                 ContentType = detectedMime,
                 Content = content,
@@ -96,8 +100,9 @@ namespace QLNhanSu.Services
 
         public async Task<FileDownloadDto?> GetFileForDownloadAsync(int id)
         {
+            var actor = await _current.GetAsync();
             var file = await _fileRepository.GetByIdAsync(id);
-            if (file == null) return null;
+            if (file == null || (actor.Role != "Admin" && file.OwnerUserId != actor.Id)) return null;
 
             return new FileDownloadDto
             {

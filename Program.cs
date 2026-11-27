@@ -56,6 +56,9 @@ builder.Services.AddScoped<IContractRepository, ContractRepository>();
 builder.Services.AddScoped<IContractService, ContractService>();
 builder.Services.AddScoped<ILeaveRequestRepository, LeaveRequestRepository>();
 builder.Services.AddScoped<ILeaveRequestService, LeaveRequestService>();
+// Xác định người dùng đang đăng nhập và quyền sở hữu
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<CurrentUserService>();
 // Options Pattern: bind + validate cấu hình ngay khi ứng dụng khởi động
 builder.Services.AddOptions<JwtSettings>()
     .Bind(builder.Configuration.GetSection(JwtSettings.SectionName))
@@ -73,7 +76,48 @@ builder.Services.AddAuthentication(options =>
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-.AddJwtBearer();
+.AddJwtBearer(options =>
+{
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = async context =>
+        {
+            var userId = context.Principal?
+                .FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            var tokenRole = context.Principal?
+                .FindFirst(ClaimTypes.Role)?.Value;
+
+            if (!int.TryParse(userId, out var id))
+            {
+                context.Fail("Invalid user ID.");
+                return;
+            }
+
+            var db = context.HttpContext.RequestServices
+                .GetRequiredService<AppDbContext>();
+
+            var user = await db.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(
+                    u => u.Id == id,
+                    context.HttpContext.RequestAborted);
+
+            if (user == null)
+            {
+                context.Fail("User no longer exists.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(tokenRole) ||
+                user.Role != tokenRole)
+            {
+                context.Fail("User role has changed.");
+                return;
+            }
+        }
+    };
+});
 
 // TokenValidationParameters lấy từ IOptions<JwtSettings> (không đọc IConfiguration trực tiếp)
 builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)

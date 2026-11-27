@@ -20,7 +20,7 @@ namespace QLNhanSu.Controllers
             _leaveRequestService = leaveRequestService;
         }
 
-        /// <summary>Lấy danh sách toàn bộ đơn xin nghỉ phép (kèm tên nhân viên).</summary>
+        /// <summary>Admin/HR xem tất cả; User chỉ xem đơn của mình.</summary>
         // GET /api/leaverequests
         [HttpGet]
         public async Task<ActionResult<List<LeaveRequestDto>>> GetAll()

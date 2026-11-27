@@ -42,6 +42,7 @@ namespace QLNhanSu.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("Salary")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("StartDate")
@@ -150,11 +151,18 @@ namespace QLNhanSu.Migrations
                     b.Property<int>("PositionId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DepartmentId");
 
                     b.HasIndex("PositionId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasFilter("[UserId] IS NOT NULL");
 
                     b.ToTable("Employees");
 
@@ -235,6 +243,7 @@ namespace QLNhanSu.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("BaseSalary")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Name")
@@ -290,10 +299,15 @@ namespace QLNhanSu.Migrations
                     b.Property<long>("Length")
                         .HasColumnType("bigint");
 
+                    b.Property<int?>("OwnerUserId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("UploadedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("OwnerUserId");
 
                     b.ToTable("StoredFiles");
                 });
@@ -347,9 +361,15 @@ namespace QLNhanSu.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Email")
+                        .IsUnique();
+
                     b.HasIndex("RefreshTokenHash")
                         .IsUnique()
                         .HasFilter("[RefreshTokenHash] IS NOT NULL");
+
+                    b.HasIndex("Username")
+                        .IsUnique();
 
                     b.ToTable("Users");
                 });
@@ -379,9 +399,16 @@ namespace QLNhanSu.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("QLNhanSu.Models.User", "User")
+                        .WithOne("Employee")
+                        .HasForeignKey("QLNhanSu.Models.Employee", "UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Department");
 
                     b.Navigation("Position");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("QLNhanSu.Models.LeaveRequest", b =>
@@ -393,6 +420,16 @@ namespace QLNhanSu.Migrations
                         .IsRequired();
 
                     b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("QLNhanSu.Models.StoredFile", b =>
+                {
+                    b.HasOne("QLNhanSu.Models.User", "OwnerUser")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("OwnerUser");
                 });
 
             modelBuilder.Entity("QLNhanSu.Models.Department", b =>
@@ -410,6 +447,11 @@ namespace QLNhanSu.Migrations
             modelBuilder.Entity("QLNhanSu.Models.Position", b =>
                 {
                     b.Navigation("Employees");
+                });
+
+            modelBuilder.Entity("QLNhanSu.Models.User", b =>
+                {
+                    b.Navigation("Employee");
                 });
 #pragma warning restore 612, 618
         }

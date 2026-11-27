@@ -16,19 +16,24 @@ namespace QLNhanSu.Controllers
     public class EmployeesController : ControllerBase
     {
         private readonly IEmployeeService _employeeService;
+        private readonly CurrentUserService _current;
 
-        public EmployeesController(IEmployeeService employeeService)
+        public EmployeesController(IEmployeeService employeeService, CurrentUserService current)
         {
             _employeeService = employeeService;
+            _current = current;
         }
 
         /// <summary>Lấy danh sách nhân viên có phân trang, tìm kiếm, lọc và sắp xếp.</summary>
         /// <param name="queryParams">PageNumber, PageSize (tối đa 50), SearchTerm (họ tên/email), DepartmentId, PositionId, IsActive, SortBy (fullname, email, hiredate), IsDescending.</param>
         /// <response code="200">Danh sách nhân viên đã phân trang.</response>
         // GET /api/employees?pageNumber=1&pageSize=10&searchTerm=an&departmentId=1
+        [Authorize(Policy = "AdminOrHR")]
         [HttpGet]
         public async Task<ActionResult<PagedResult<EmployeeDto>>> GetAll([FromQuery] EmployeeQueryParameters queryParams)
         {
+            var actor = await _current.GetAsync();
+            if (actor.Role is not ("Admin" or "HR")) return Forbid();
             return Ok(await _employeeService.GetAllAsync(queryParams));
         }
 
@@ -39,7 +44,25 @@ namespace QLNhanSu.Controllers
         [HttpGet("{id:int}")]
         public async Task<ActionResult<EmployeeDto>> GetById(int id)
         {
+            var actor = await _current.GetAsync();
+            if (actor.Role == "User" && await _current.EmployeeIdAsync(actor.Id) != id)
+                return NotFound();
             return Ok(await _employeeService.GetByIdAsync(id));
+        }
+
+        [HttpGet("me")]
+        public async Task<ActionResult<EmployeeDto>> GetMe()
+        {
+            var actor = await _current.GetAsync();
+            return Ok(await _employeeService.GetByIdAsync(await _current.EmployeeIdAsync(actor.Id)));
+        }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPut("{id:int}/link-user/{userId:int}")]
+        public async Task<IActionResult> LinkUser(int id, int userId)
+        {
+            await _current.LinkAsync(id, userId);
+            return NoContent();
         }
 
         /// <summary>Tạo mới một nhân viên. (Admin, HR)</summary>
@@ -52,6 +75,8 @@ namespace QLNhanSu.Controllers
         [HttpPost]
         public async Task<ActionResult<EmployeeDto>> Create(EmployeeCreateDto dto)
         {
+            var actor = await _current.GetAsync();
+            if (actor.Role is not ("Admin" or "HR")) return Forbid();
             var created = await _employeeService.CreateAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
@@ -68,6 +93,8 @@ namespace QLNhanSu.Controllers
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, EmployeeCreateDto dto)
         {
+            var actor = await _current.GetAsync();
+            if (actor.Role is not ("Admin" or "HR")) return Forbid();
             await _employeeService.UpdateAsync(id, dto);
             return NoContent();
         }
@@ -82,6 +109,8 @@ namespace QLNhanSu.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Deactivate(int id)
         {
+            var actor = await _current.GetAsync();
+            if (actor.Role != "Admin") return Forbid();
             await _employeeService.DeactivateAsync(id);
             return NoContent();
         }

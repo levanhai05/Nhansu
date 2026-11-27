@@ -92,6 +92,19 @@ namespace QLNhanSu.Services
 
         private async Task ValidateReferencesAsync(EmployeeCreateDto dto)
         {
+            var today = DateTime.UtcNow.AddHours(7).Date;
+            if (dto.DateOfBirth == default || dto.HireDate == default)
+                throw new BadRequestException("Ngày sinh và ngày vào làm là bắt buộc.");
+
+            if (dto.DateOfBirth.Date >= today)
+                throw new BadRequestException("Ngày sinh phải trước ngày hiện tại.");
+
+            if (dto.HireDate.Date <= dto.DateOfBirth.Date)
+                throw new BadRequestException("Ngày vào làm phải sau ngày sinh.");
+
+            if (dto.HireDate.Date > today)
+                throw new BadRequestException("Ngày vào làm không được ở tương lai.");
+
             if (!await _repo.DepartmentExistsAsync(dto.DepartmentId))
                 throw new BadRequestException("DepartmentId không tồn tại.");
 

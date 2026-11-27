@@ -73,6 +73,12 @@ namespace QLNhanSu.Repositories
             return await _db.Users.FirstOrDefaultAsync(u => u.Username == username || u.Email == email);
         }
 
+        public Task<bool> ExistsForOtherUserAsync(int id, string username, string email)
+        {
+            return _db.Users.AnyAsync(u => u.Id != id &&
+                (u.Username == username || u.Email == email));
+        }
+
         public async Task AddAsync(User user)
         {
             await _db.Users.AddAsync(user);
