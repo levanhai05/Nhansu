@@ -46,7 +46,7 @@ namespace QLNhanSu.Controllers
         /// <response code="404">Không tìm thấy đơn.</response>
         /// <response code="400">Status không phải "Approved" hoặc "Rejected".</response>
         // PUT /api/leaverequests/1/status
-        [Authorize(Roles = "Admin,HR")]
+        [Authorize(Policy = "AdminOrHR")]
         [HttpPut("{id:int}/status")]
         public async Task<IActionResult> UpdateStatus(int id, LeaveRequestUpdateStatusDto dto)
         {

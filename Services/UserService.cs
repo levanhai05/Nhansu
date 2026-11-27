@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -78,7 +79,7 @@ namespace QLNhanSu.Services
             return (true, "Đăng ký thành công", MapToResponseDto(newUser));
         }
 
-        public async Task<(bool IsSuccess, string Message, string? Token)> LoginAsync(LoginDto request)
+        public async Task<(bool IsSuccess, string Message, TokenPairDto? Tokens)> LoginAsync(LoginDto request)
         {
             var user = await _userRepo.GetByUsernameOrEmailAsync(request.Username, request.Username);
             if (user == null || !VerifyPasswordHash(request.Password, user.PasswordHash, user.PasswordSalt))
@@ -86,7 +87,44 @@ namespace QLNhanSu.Services
                 return (false, "Sai tên đăng nhập hoặc mật khẩu.", null);
             }
 
-            return (true, "Đăng nhập thành công", CreateToken(user));
+            var tokens = RotateRefreshToken(user);
+            try { await _userRepo.SaveChangesAsync(); }
+            catch (DbUpdateConcurrencyException)
+            { return (false, "Tài khoản vừa thay đổi, vui lòng đăng nhập lại.", null); }
+            return (true, "Đăng nhập thành công", tokens);
+        }
+
+        private static string HashRefreshToken(string token)
+            => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+
+        private TokenPairDto RotateRefreshToken(User user)
+        {
+            var raw = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+            user.RefreshTokenHash = HashRefreshToken(raw);
+            user.RefreshTokenExpiresAt = DateTime.UtcNow.AddDays(7);
+            return new TokenPairDto(CreateToken(user), raw);
+        }
+
+        public async Task<TokenPairDto?> RefreshAsync(string refreshToken)
+        {
+            var user = await _userRepo.GetByRefreshTokenHashAsync(HashRefreshToken(refreshToken));
+            if (user == null || user.RefreshTokenExpiresAt == null ||
+                user.RefreshTokenExpiresAt <= DateTime.UtcNow) return null;
+            var tokens = RotateRefreshToken(user);
+            try { await _userRepo.SaveChangesAsync(); }
+            catch (DbUpdateConcurrencyException) { return null; }
+            return tokens;
+        }
+
+        public async Task<bool> RevokeAsync(string refreshToken)
+        {
+            var user = await _userRepo.GetByRefreshTokenHashAsync(HashRefreshToken(refreshToken));
+            if (user == null) return false;
+            user.RefreshTokenHash = null;
+            user.RefreshTokenExpiresAt = null;
+            try { await _userRepo.SaveChangesAsync(); }
+            catch (DbUpdateConcurrencyException) { return false; }
+            return true;
         }
 
         public async Task<(bool IsSuccess, string Message)> UpdateAsync(int id, UserRegisterDto request)
@@ -117,6 +155,9 @@ namespace QLNhanSu.Services
                 user.PasswordSalt = passwordSalt;
             }
 
+            // Mọi thay đổi thông tin tài khoản đều thu hồi refresh token hiện tại.
+            user.RefreshTokenHash = null;
+            user.RefreshTokenExpiresAt = null;
             _userRepo.Update(user);
             await _userRepo.SaveChangesAsync();
 
@@ -177,6 +218,7 @@ namespace QLNhanSu.Services
 
             var claims = new List<Claim>
             {
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new(ClaimTypes.Name, user.Username),
                 new(ClaimTypes.Email, user.Email),

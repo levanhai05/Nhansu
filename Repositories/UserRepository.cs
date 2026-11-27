@@ -60,6 +60,9 @@ namespace QLNhanSu.Repositories
             return new PagedResult<User>(items, totalCount, queryParams.PageNumber, queryParams.PageSize);
         }
 
+        public Task<User?> GetByRefreshTokenHashAsync(string hash)
+            => _db.Users.SingleOrDefaultAsync(u => u.RefreshTokenHash == hash);
+
         public async Task<User?> GetByIdAsync(int id)
         {
             return await _db.Users.FirstOrDefaultAsync(u => u.Id == id);

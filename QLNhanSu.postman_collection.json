@@ -1,0 +1,1598 @@
+{
+  "info": {
+    "name": "QLNhanSu | Backend API",
+    "description": "Collection cho môi trường Development. Điền mật khẩu ở giá trị local, không chia sẻ token. Chạy thủ công theo hướng dẫn README; không chạy toàn bộ tự động trên dữ liệu thật.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "adminUsername",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "adminPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "demoPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "departmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "positionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "employeeId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contractId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "leaveRequestId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "fileId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Auth",
+      "item": [
+        {
+          "name": "Đăng nhập",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/Auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Auth",
+                "login"
+              ]
+            },
+            "description": "Quyền: Công khai. HTTP mong đợi: 200. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  if (data.token) pm.collectionVariables.set(\"accessToken\", data.token);",
+                  "  if (data.refreshToken) pm.collectionVariables.set(\"refreshToken\", data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Đăng ký User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/Auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Auth",
+                "register"
+              ]
+            },
+            "description": "Quyền: Công khai. HTTP mong đợi: 200. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"demo_{{$timestamp}}\",\n  \"email\": \"demo_{{$timestamp}}@example.com\",\n  \"password\": \"{{demoPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Làm mới token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/Auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Auth",
+                "refresh"
+              ]
+            },
+            "description": "Quyền: Công khai. HTTP mong đợi: 200. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  if (data.token) pm.collectionVariables.set(\"accessToken\", data.token);",
+                  "  if (data.refreshToken) pm.collectionVariables.set(\"refreshToken\", data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Đăng xuất",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/Auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Auth",
+                "logout"
+              ]
+            },
+            "description": "Quyền: Công khai. HTTP mong đợi: 204. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\", function () { pm.response.to.have.status(204); });",
+                  "if (pm.response.code === 204) { pm.collectionVariables.unset(\"refreshToken\"); pm.collectionVariables.unset(\"accessToken\"); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 Users",
+      "item": [
+        {
+          "name": "Danh sách / phân trang",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Users?PageNumber=1&PageSize=10&SortBy=username&IsDescending=false",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Users"
+              ],
+              "query": [
+                {
+                  "key": "PageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "PageSize",
+                  "value": "10"
+                },
+                {
+                  "key": "SearchTerm",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "Role",
+                  "value": "User",
+                  "disabled": true
+                },
+                {
+                  "key": "SortBy",
+                  "value": "username"
+                },
+                {
+                  "key": "IsDescending",
+                  "value": "false"
+                }
+              ]
+            },
+            "description": "Quyền: Admin / HR. HTTP mong đợi: 200. Chỉ chạy thao tác ghi trên database thử nghiệm."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Chi tiết",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Quyền: Admin / HR. HTTP mong đợi: 200. Chỉ chạy thao tác ghi trên database thử nghiệm."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Tạo User mẫu",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/Users/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Users",
+                "register"
+              ]
+            },
+            "description": "Quyền: Admin. HTTP mong đợi: 201. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"postman_{{$timestamp}}\",\n  \"email\": \"postman_{{$timestamp}}@example.com\",\n  \"password\": \"{{demoPassword}}\",\n  \"role\": \"User\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) { const data = pm.response.json(); if (data.id != null) pm.collectionVariables.set(\"userId\", String(data.id)); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Cập nhật User mẫu",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/Users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Quyền: Admin. HTTP mong đợi: 200. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"postman_updated_{{$timestamp}}\",\n  \"email\": \"postman_updated_{{$timestamp}}@example.com\",\n  \"password\": \"{{demoPassword}}\",\n  \"role\": \"User\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Xóa User mẫu",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Quyền: Admin. HTTP mong đợi: 200. Chỉ chạy thao tác ghi trên database thử nghiệm."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 Departments",
+      "item": [
+        {
+          "name": "Danh sách",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Departments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Departments"
+              ]
+            },
+            "description": "Quyền: JWT. HTTP mong đợi: 200. Chỉ chạy thao tác ghi trên database thử nghiệm."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Chi tiết",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Departments/{{departmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Departments",
+                "{{departmentId}}"
+              ]
+            },
+            "description": "Quyền: JWT. HTTP mong đợi: 200. Chỉ chạy thao tác ghi trên database thử nghiệm."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Tạo mẫu",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/Departments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Departments"
+              ]
+            },
+            "description": "Quyền: Admin / HR. HTTP mong đợi: 201. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Phòng thử nghiệm {{$timestamp}}\",\n  \"description\": \"Dữ liệu Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) { const data = pm.response.json(); if (data.id != null) pm.collectionVariables.set(\"departmentId\", String(data.id)); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Cập nhật mẫu",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/Departments/{{departmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Departments",
+                "{{departmentId}}"
+              ]
+            },
+            "description": "Quyền: Admin / HR. HTTP mong đợi: 204. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Phòng thử nghiệm {{$timestamp}}\",\n  \"description\": \"Dữ liệu Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\", function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Xóa mẫu",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Departments/{{departmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Departments",
+                "{{departmentId}}"
+              ]
+            },
+            "description": "Quyền: Admin. HTTP mong đợi: 204. Chỉ chạy thao tác ghi trên database thử nghiệm."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\", function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 Positions",
+      "item": [
+        {
+          "name": "Danh sách",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Positions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Positions"
+              ]
+            },
+            "description": "Quyền: JWT. HTTP mong đợi: 200. Chỉ chạy thao tác ghi trên database thử nghiệm."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Chi tiết",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Positions/{{positionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Positions",
+                "{{positionId}}"
+              ]
+            },
+            "description": "Quyền: JWT. HTTP mong đợi: 200. Chỉ chạy thao tác ghi trên database thử nghiệm."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Tạo mẫu",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/Positions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Positions"
+              ]
+            },
+            "description": "Quyền: Admin / HR. HTTP mong đợi: 201. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chức vụ thử nghiệm {{$timestamp}}\",\n  \"baseSalary\": 10000000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) { const data = pm.response.json(); if (data.id != null) pm.collectionVariables.set(\"positionId\", String(data.id)); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Cập nhật mẫu",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/Positions/{{positionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Positions",
+                "{{positionId}}"
+              ]
+            },
+            "description": "Quyền: Admin / HR. HTTP mong đợi: 204. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chức vụ thử nghiệm {{$timestamp}}\",\n  \"baseSalary\": 10000000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\", function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Xóa mẫu",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Positions/{{positionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Positions",
+                "{{positionId}}"
+              ]
+            },
+            "description": "Quyền: Admin. HTTP mong đợi: 204. Chỉ chạy thao tác ghi trên database thử nghiệm."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\", function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 Employees",
+      "item": [
+        {
+          "name": "Danh sách",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Employees?PageNumber=1&PageSize=10&SortBy=fullname&IsDescending=false",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Employees"
+              ],
+              "query": [
+                {
+                  "key": "PageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "PageSize",
+                  "value": "10"
+                },
+                {
+                  "key": "SearchTerm",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "DepartmentId",
+                  "value": "{{departmentId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "PositionId",
+                  "value": "{{positionId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "IsActive",
+                  "value": "true",
+                  "disabled": true
+                },
+                {
+                  "key": "SortBy",
+                  "value": "fullname"
+                },
+                {
+                  "key": "IsDescending",
+                  "value": "false"
+                }
+              ]
+            },
+            "description": "Quyền: JWT. HTTP mong đợi: 200. Chỉ chạy thao tác ghi trên database thử nghiệm."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Chi tiết",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Employees/{{employeeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Employees",
+                "{{employeeId}}"
+              ]
+            },
+            "description": "Quyền: JWT. HTTP mong đợi: 200. Chỉ chạy thao tác ghi trên database thử nghiệm."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Tạo mẫu",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/Employees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Employees"
+              ]
+            },
+            "description": "Quyền: Admin / HR. HTTP mong đợi: 201. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Nhân viên thử nghiệm\",\n  \"dateOfBirth\": \"2000-01-01\",\n  \"gender\": \"Nam\",\n  \"email\": \"employee_{{$timestamp}}@example.com\",\n  \"phone\": \"0900000000\",\n  \"address\": \"Đà Nẵng\",\n  \"hireDate\": \"2026-01-01\",\n  \"departmentId\": {{departmentId}},\n  \"positionId\": {{positionId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) { const data = pm.response.json(); if (data.id != null) pm.collectionVariables.set(\"employeeId\", String(data.id)); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Cập nhật mẫu",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/Employees/{{employeeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Employees",
+                "{{employeeId}}"
+              ]
+            },
+            "description": "Quyền: Admin / HR. HTTP mong đợi: 204. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Nhân viên thử nghiệm\",\n  \"dateOfBirth\": \"2000-01-01\",\n  \"gender\": \"Nam\",\n  \"email\": \"employee_{{$timestamp}}@example.com\",\n  \"phone\": \"0900000000\",\n  \"address\": \"Đà Nẵng\",\n  \"hireDate\": \"2026-01-01\",\n  \"departmentId\": {{departmentId}},\n  \"positionId\": {{positionId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\", function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Vô hiệu hóa mẫu",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Employees/{{employeeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Employees",
+                "{{employeeId}}"
+              ]
+            },
+            "description": "Quyền: Admin. HTTP mong đợi: 204. Chỉ chạy thao tác ghi trên database thử nghiệm."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\", function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06 Contracts",
+      "item": [
+        {
+          "name": "Danh sách",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Contracts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Contracts"
+              ]
+            },
+            "description": "Quyền: Admin / HR. HTTP mong đợi: 200. Chỉ chạy thao tác ghi trên database thử nghiệm."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Theo nhân viên",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Contracts/employee/{{employeeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Contracts",
+                "employee",
+                "{{employeeId}}"
+              ]
+            },
+            "description": "Quyền: Admin / HR. HTTP mong đợi: 200. Chỉ chạy thao tác ghi trên database thử nghiệm."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Tạo hợp đồng",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/Contracts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Contracts"
+              ]
+            },
+            "description": "Quyền: Admin / HR. HTTP mong đợi: 201. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": {{employeeId}},\n  \"contractType\": \"Xác định thời hạn\",\n  \"startDate\": \"2026-11-01\",\n  \"endDate\": \"2027-11-01\",\n  \"salary\": 12000000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) { const data = pm.response.json(); if (data.id != null) pm.collectionVariables.set(\"contractId\", String(data.id)); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Chấm dứt hợp đồng",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Contracts/{{contractId}}/terminate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Contracts",
+                "{{contractId}}",
+                "terminate"
+              ]
+            },
+            "description": "Quyền: Admin / HR. HTTP mong đợi: 204. Chỉ chạy thao tác ghi trên database thử nghiệm."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\", function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "07 LeaveRequests",
+      "item": [
+        {
+          "name": "Danh sách",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/LeaveRequests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "LeaveRequests"
+              ]
+            },
+            "description": "Quyền: JWT. HTTP mong đợi: 200. Chỉ chạy thao tác ghi trên database thử nghiệm."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Tạo đơn",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/LeaveRequests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "LeaveRequests"
+              ]
+            },
+            "description": "Quyền: JWT. HTTP mong đợi: 200. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": {{employeeId}},\n  \"startDate\": \"2027-01-10\",\n  \"endDate\": \"2027-01-12\",\n  \"reason\": \"Nghỉ phép thử nghiệm\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) { const data = pm.response.json(); if (data.id != null) pm.collectionVariables.set(\"leaveRequestId\", String(data.id)); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Duyệt đơn",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/LeaveRequests/{{leaveRequestId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "LeaveRequests",
+                "{{leaveRequestId}}",
+                "status"
+              ]
+            },
+            "description": "Quyền: Admin / HR. HTTP mong đợi: 204. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Approved\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\", function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "08 Files",
+      "item": [
+        {
+          "name": "Upload ảnh (chọn file)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Files/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Files",
+                "upload"
+              ]
+            },
+            "description": "Quyền: JWT. HTTP mong đợi: 200. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "File",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) { const data = pm.response.json(); if (data.id != null) pm.collectionVariables.set(\"fileId\", String(data.id)); }"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Tải ảnh",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Files/{{fileId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Files",
+                "{{fileId}}"
+              ]
+            },
+            "description": "Quyền: JWT. HTTP mong đợi: 200. Chỉ chạy thao tác ghi trên database thử nghiệm."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "09 Errors - Development",
+      "item": [
+        {
+          "name": "Giả lập 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Errors/bad-request",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Errors",
+                "bad-request"
+              ]
+            },
+            "description": "Quyền: Công khai. HTTP mong đợi: 400. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Giả lập 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Errors/not-found",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Errors",
+                "not-found"
+              ]
+            },
+            "description": "Quyền: Công khai. HTTP mong đợi: 404. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Giả lập 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Errors/unauthorized",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Errors",
+                "unauthorized"
+              ]
+            },
+            "description": "Quyền: Công khai. HTTP mong đợi: 401. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Giả lập 500",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Errors/server",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Errors",
+                "server"
+              ]
+            },
+            "description": "Quyền: Công khai. HTTP mong đợi: 500. Chỉ chạy thao tác ghi trên database thử nghiệm.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 500\", function () { pm.response.to.have.status(500); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ]
+}

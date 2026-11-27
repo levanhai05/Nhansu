@@ -50,7 +50,22 @@ namespace QLNhanSu.Controllers
             if (!result.IsSuccess)
                 return Unauthorized(new { message = result.Message });
 
-            return Ok(new { token = result.Token });
+            return Ok(result.Tokens);
+        }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh(RefreshTokenDto dto)
+        {
+            var tokens = await _userService.RefreshAsync(dto.RefreshToken);
+            if (tokens == null) return Unauthorized(new { message = "Refresh token không hợp lệ hoặc đã hết hạn." });
+            return Ok(tokens);
+        }
+
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout(RefreshTokenDto dto)
+        {
+            await _userService.RevokeAsync(dto.RefreshToken);
+            return NoContent();
         }
     }
 }

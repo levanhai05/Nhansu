@@ -29,6 +29,13 @@ namespace QLNhanSu.Models
         [MaxLength(20)]
         public string Role { get; set; } = "User"; // User, HR, Admin
 
+        [MaxLength(64)]
+        public string? RefreshTokenHash { get; set; }
+        public DateTime? RefreshTokenExpiresAt { get; set; }
+
+        [Timestamp]
+        public byte[] RowVersion { get; set; } = Array.Empty<byte>();
+
         [Required]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

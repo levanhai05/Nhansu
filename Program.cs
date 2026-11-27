@@ -15,14 +15,24 @@ using System.Security.Cryptography;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-
+builder.Services.AddControllers();
 // Cấu hình Serilog (đọc từ appsettings.json: Console + file Logs/log-YYYYMMDD.txt)
 builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Configuration(context.Configuration)
     .ReadFrom.Services(services)
     .Enrich.FromLogContext());
 
-builder.Services.AddControllers();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireRole("Admin"));
+
+    options.AddPolicy("AdminOrHR", policy =>
+        policy.RequireRole("Admin", "HR"));
+
+    options.AddPolicy("AllRoles", policy =>
+        policy.RequireRole("Admin", "HR", "User"));
+});
 
 // Lấy chuỗi kết nối từ appsettings.json
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");

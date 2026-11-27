@@ -48,7 +48,7 @@ namespace QLNhanSu.Controllers
         /// <response code="400">Dữ liệu không hợp lệ hoặc trùng tên.</response>
         /// <response code="403">Không đủ quyền.</response>
         // POST /api/departments
-        [Authorize(Roles = "Admin,HR")]
+        [Authorize(Policy = "AdminOrHR")]
         [HttpPost]
         public async Task<ActionResult<DepartmentDto>> Create(DepartmentCreateDto dto)
         {
@@ -64,7 +64,7 @@ namespace QLNhanSu.Controllers
         /// <response code="403">Không đủ quyền.</response>
         /// <response code="404">Không tìm thấy.</response>
         // PUT /api/departments/1
-        [Authorize(Roles = "Admin,HR")]
+        [Authorize(Policy = "AdminOrHR")]
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, DepartmentCreateDto dto)
         {
@@ -79,7 +79,7 @@ namespace QLNhanSu.Controllers
         /// <response code="403">Không đủ quyền.</response>
         /// <response code="404">Không tìm thấy.</response>
         // DELETE /api/departments/1
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "AdminOnly")]
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {

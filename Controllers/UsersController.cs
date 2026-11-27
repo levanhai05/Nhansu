@@ -26,7 +26,7 @@ namespace QLNhanSu.Controllers
         /// <response code="200">Trả về danh sách người dùng đã phân trang.</response>
         /// <response code="401">Chưa đăng nhập hoặc token không hợp lệ.</response>
         /// <response code="403">Không đủ quyền.</response>
-        [Authorize(Roles = "Admin,HR")]
+       [Authorize(Policy = "AdminOrHR")]
         [HttpGet]
         public async Task<ActionResult<PagedResult<UserResponseDto>>> GetAll([FromQuery] UserQueryParameters queryParams)
         {
@@ -39,7 +39,7 @@ namespace QLNhanSu.Controllers
         /// <response code="200">Trả về thông tin người dùng.</response>
         /// <response code="403">Không đủ quyền.</response>
         /// <response code="404">Không tìm thấy người dùng.</response>
-        [Authorize(Roles = "Admin,HR")]
+        [Authorize(Policy = "AdminOrHR")]
         [HttpGet("{id:int}")]
         public async Task<ActionResult<UserResponseDto>> GetById(int id)
         {
@@ -57,7 +57,7 @@ namespace QLNhanSu.Controllers
         /// <response code="201">Tạo thành công.</response>
         /// <response code="400">Username/Email đã được sử dụng hoặc Role không hợp lệ.</response>
         /// <response code="403">Không đủ quyền.</response>
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "AdminOnly")]
         [HttpPost("register")]
         public async Task<ActionResult<UserResponseDto>> Register([FromBody] UserRegisterDto request)
         {
@@ -76,7 +76,7 @@ namespace QLNhanSu.Controllers
         /// <response code="200">Cập nhật thành công.</response>
         /// <response code="403">Không đủ quyền.</response>
         /// <response code="404">Không tìm thấy người dùng hoặc Role không hợp lệ.</response>
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "AdminOnly")]
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, [FromBody] UserRegisterDto request)
         {
@@ -94,7 +94,7 @@ namespace QLNhanSu.Controllers
         /// <response code="200">Xoá thành công.</response>
         /// <response code="403">Không đủ quyền.</response>
         /// <response code="404">Không tìm thấy người dùng.</response>
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "AdminOnly")]
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {

@@ -48,7 +48,7 @@ namespace QLNhanSu.Controllers
         /// <response code="400">Dữ liệu không hợp lệ hoặc DepartmentId/PositionId không tồn tại.</response>
         /// <response code="403">Không đủ quyền.</response>
         // POST /api/employees
-        [Authorize(Roles = "Admin,HR")]
+        [Authorize(Policy = "AdminOrHR")]
         [HttpPost]
         public async Task<ActionResult<EmployeeDto>> Create(EmployeeCreateDto dto)
         {
@@ -64,7 +64,7 @@ namespace QLNhanSu.Controllers
         /// <response code="403">Không đủ quyền.</response>
         /// <response code="404">Không tìm thấy nhân viên.</response>
         // PUT /api/employees/1
-        [Authorize(Roles = "Admin,HR")]
+        [Authorize(Policy = "AdminOrHR")]
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, EmployeeCreateDto dto)
         {
@@ -78,7 +78,7 @@ namespace QLNhanSu.Controllers
         /// <response code="403">Không đủ quyền.</response>
         /// <response code="404">Không tìm thấy nhân viên.</response>
         // DELETE /api/employees/1
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "AdminOnly")]
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Deactivate(int id)
         {

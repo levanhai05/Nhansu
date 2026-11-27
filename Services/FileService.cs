@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Http;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
 using Microsoft.Extensions.Options;
 using QLNhanSu.Models;
 using QLNhanSu.Repositories;
@@ -35,12 +37,50 @@ namespace QLNhanSu.Services
             using var memoryStream = new MemoryStream();
             await file.CopyToAsync(memoryStream);
 
+            if (memoryStream.Length > _settings.MaxFileSizeInBytes)
+                throw new ArgumentException("File vượt quá dung lượng cho phép.");
+            var content = memoryStream.ToArray();
+            string detectedMime;
+            try
+            {
+                var format = Image.DetectFormat(content);
+                var expected = extension switch
+                {
+                    ".jpg" or ".jpeg" => "JPEG",
+                    ".png" => "PNG",
+                    ".gif" => "GIF",
+                    ".webp" => "WEBP",
+                    ".bmp" => "BMP",
+                    _ => ""
+                };
+                if (!string.Equals(format.Name, expected, StringComparison.OrdinalIgnoreCase))
+                    throw new ArgumentException("Nội dung ảnh không khớp phần mở rộng.");
+                var info = Image.Identify(content);
+                if (info.Width <= 0 || info.Height <= 0 ||
+                    (long)info.Width * info.Height > 12_000_000)
+                    throw new ArgumentException("Kích thước ảnh không hợp lệ hoặc quá lớn.");
+                using var image = Image.Load(new DecoderOptions { MaxFrames = 1, SkipMetadata = true }, content);
+                // Mã hóa lại ảnh, loại bỏ dữ liệu đính kèm và metadata không cần thiết.
+                using var clean = new MemoryStream();
+                image.Save(clean, format);
+                content = clean.ToArray();
+                if (content.LongLength > _settings.MaxFileSizeInBytes)
+                    throw new ArgumentException("Ảnh sau xử lý vượt quá dung lượng cho phép.");
+                detectedMime = format.DefaultMimeType;
+            }
+            catch (UnknownImageFormatException)
+            { throw new ArgumentException("File không phải ảnh hợp lệ."); }
+            catch (InvalidImageContentException)
+            { throw new ArgumentException("Dữ liệu ảnh bị hỏng."); }
+            catch (NotSupportedException)
+            { throw new ArgumentException("Định dạng ảnh không được hỗ trợ."); }
+
             var storedFile = new StoredFile
             {
                 FileName = Path.GetFileName(file.FileName),
-                ContentType = file.ContentType,
-                Content = memoryStream.ToArray(),
-                Length = file.Length
+                ContentType = detectedMime,
+                Content = content,
+                Length = content.LongLength
             };
 
             var createdFile = await _fileRepository.AddAsync(storedFile);

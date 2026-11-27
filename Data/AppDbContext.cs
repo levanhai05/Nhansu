@@ -19,6 +19,7 @@ namespace QLNhanSu.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<User>().HasIndex(u => u.RefreshTokenHash).IsUnique();
 
             // Không cho xoá Khoa/Chức vụ khi còn nhân viên (tránh Cascade xoá dây chuyền)
             modelBuilder.Entity<Employee>()

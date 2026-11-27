@@ -22,7 +22,7 @@ namespace QLNhanSu.Controllers
 
         /// <summary>Lấy danh sách toàn bộ hợp đồng (kèm tên nhân viên). (Admin, HR)</summary>
         // GET /api/contracts
-        [Authorize(Roles = "Admin,HR")]
+        [Authorize(Policy = "AdminOrHR")]
         [HttpGet]
         public async Task<ActionResult<List<ContractDto>>> GetAll()
         {
@@ -32,7 +32,7 @@ namespace QLNhanSu.Controllers
         /// <summary>Lấy danh sách hợp đồng của một nhân viên cụ thể. (Admin, HR)</summary>
         /// <param name="employeeId">Id của nhân viên.</param>
         // GET /api/contracts/employee/1
-        [Authorize(Roles = "Admin,HR")]
+[Authorize(Policy = "AdminOrHR")]
         [HttpGet("employee/{employeeId:int}")]
         public async Task<ActionResult<List<ContractDto>>> GetByEmployee(int employeeId)
         {
@@ -44,7 +44,7 @@ namespace QLNhanSu.Controllers
         /// <response code="201">Tạo thành công.</response>
         /// <response code="400">Dữ liệu không hợp lệ hoặc EmployeeId không tồn tại.</response>
         // POST /api/contracts
-        [Authorize(Roles = "Admin,HR")]
+        [Authorize(Policy = "AdminOrHR")]
         [HttpPost]
         public async Task<ActionResult<ContractDto>> Create(ContractCreateDto dto)
         {
@@ -57,7 +57,7 @@ namespace QLNhanSu.Controllers
         /// <response code="204">Cập nhật thành công.</response>
         /// <response code="404">Không tìm thấy hợp đồng.</response>
         // PUT /api/contracts/1/terminate
-        [Authorize(Roles = "Admin,HR")]
+        [Authorize(Policy = "AdminOrHR")]
         [HttpPut("{id:int}/terminate")]
         public async Task<IActionResult> Terminate(int id)
         {
