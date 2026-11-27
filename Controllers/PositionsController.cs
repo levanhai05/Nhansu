@@ -79,13 +79,17 @@ namespace QLNhanSu.Controllers
         /// <response code="404">Không tìm thấy.</response>
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var p = await _context.Positions.FindAsync(id);
-            if (p == null) throw new KeyNotFoundException($"Không tìm thấy Chức vụ có Id = {id}.");
-            _context.Positions.Remove(p);
-            await _context.SaveChangesAsync();
-            return NoContent();
-        }
+public async Task<IActionResult> Delete(int id)
+{
+    var p = await _context.Positions.FindAsync(id);
+    if (p == null) throw new KeyNotFoundException($"Không tìm thấy Chức vụ có Id = {id}.");
+
+    if (await _context.Employees.AnyAsync(e => e.PositionId == id))
+        throw new InvalidOperationException("Không thể xoá Chức vụ đang có nhân viên.");
+
+    _context.Positions.Remove(p);
+    await _context.SaveChangesAsync();
+    return NoContent();
+}
     }
 }

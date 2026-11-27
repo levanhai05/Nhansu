@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QLNhanSu.Services;
 using static QLNhanSu.DTOs.FileUploadDbDto;
@@ -7,6 +8,7 @@ namespace QLNhanSu.Controllers
     /// <summary>
     /// Upload và tải file ảnh (lưu trực tiếp trong database).
     /// </summary>
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class FilesController : ControllerBase
@@ -22,6 +24,7 @@ namespace QLNhanSu.Controllers
         /// <param name="dto">File ảnh cần upload (multipart/form-data).</param>
         /// <response code="200">Upload thành công, trả về Id, tên file, dung lượng và thời điểm upload.</response>
         /// <response code="400">File rỗng, vượt quá 1MB hoặc không phải file ảnh.</response>
+        /// <response code="401">Chưa đăng nhập hoặc token không hợp lệ.</response>
         [HttpPost("upload")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> Upload([FromForm] UploadFileDto dto)
@@ -35,6 +38,7 @@ namespace QLNhanSu.Controllers
         /// <summary>Tải về một file đã upload theo Id.</summary>
         /// <param name="id">Id của file.</param>
         /// <response code="200">Trả về nội dung file.</response>
+        /// <response code="401">Chưa đăng nhập hoặc token không hợp lệ.</response>
         /// <response code="404">Không tìm thấy file với Id tương ứng.</response>
         [HttpGet("{id:int}")]
         public async Task<IActionResult> Download(int id)

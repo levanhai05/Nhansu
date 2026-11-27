@@ -84,13 +84,17 @@ namespace QLNhanSu.Controllers
         /// <response code="404">Không tìm thấy.</response>
         // DELETE /api/departments/1
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var d = await _context.Departments.FindAsync(id);
-            if (d == null) throw new KeyNotFoundException($"Không tìm thấy Khoa/Phòng ban có Id = {id}.");
-            _context.Departments.Remove(d);
-            await _context.SaveChangesAsync();
-            return NoContent();
-        }
+public async Task<IActionResult> Delete(int id)
+{
+    var d = await _context.Departments.FindAsync(id);
+    if (d == null) throw new KeyNotFoundException($"Không tìm thấy Khoa/Phòng ban có Id = {id}.");
+
+    if (await _context.Employees.AnyAsync(e => e.DepartmentId == id))
+        throw new InvalidOperationException("Không thể xoá Khoa/Phòng ban đang có nhân viên.");
+
+    _context.Departments.Remove(d);
+    await _context.SaveChangesAsync();
+    return NoContent();
+}
     }
 }

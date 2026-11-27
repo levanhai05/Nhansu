@@ -3,7 +3,7 @@ using QLNhanSu.Models;
 
 namespace QLNhanSu.Data
 {
-    // DbContext - cầu nối giữa code và database SQLite
+    // DbContext - cầu nối giữa code và database SQL Server
     public class AppDbContext : DbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
@@ -19,6 +19,19 @@ namespace QLNhanSu.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Không cho xoá Khoa/Chức vụ khi còn nhân viên (tránh Cascade xoá dây chuyền)
+            modelBuilder.Entity<Employee>()
+                .HasOne(e => e.Department)
+                .WithMany(d => d.Employees)
+                .HasForeignKey(e => e.DepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Employee>()
+                .HasOne(e => e.Position)
+                .WithMany(p => p.Employees)
+                .HasForeignKey(e => e.PositionId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Seed Khoa/Phòng ban mẫu
             modelBuilder.Entity<Department>().HasData(
