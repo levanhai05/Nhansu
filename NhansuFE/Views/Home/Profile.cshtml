@@ -1,0 +1,8 @@
+@model Employee
+<h4 class="mb-3">Hồ sơ của tôi</h4>
+<div class="card card-body" style="max-width:700px"><dl class="row mb-0">
+@foreach (var p in typeof(Employee).GetProperties().Where(p => p.Name != "Id" && p.Name != "DepartmentId" && p.Name != "PositionId")) {
+  var v = p.GetValue(Model);
+  <dt class="col-sm-4">@(p.GetCustomAttribute<DisplayAttribute>()?.Name ?? p.Name)</dt>
+  <dd class="col-sm-8">@(v is DateTime d ? d.ToString("dd/MM/yyyy") : v is bool b ? (b ? "Có" : "Không") : v?.ToString())</dd> }
+</dl></div>

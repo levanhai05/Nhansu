@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using QLNhanSu.Models;
 
 namespace QLNhanSu.Data
@@ -15,11 +15,90 @@ namespace QLNhanSu.Data
         public DbSet<Contract> Contracts => Set<Contract>();
         public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
         public DbSet<StoredFile> StoredFiles => Set<StoredFile>();
+        public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
+        public DbSet<WorkShift> WorkShifts => Set<WorkShift>();
+        public DbSet<EmployeeShiftAssignment> EmployeeShiftAssignments => Set<EmployeeShiftAssignment>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<AttendanceRecord>(entity =>
+            {
+                entity.ToTable("AttendanceRecords");
 
+                entity.HasKey(x => x.Id);
+
+                entity.Property(x => x.WorkDate)
+                    .HasColumnType("date");
+
+                entity.Property(x => x.CheckInUtc)
+                    .HasColumnType("datetime2");
+
+                entity.Property(x => x.CheckOutUtc)
+                    .HasColumnType("datetime2");
+
+                entity.Property(x => x.Note)
+                    .HasMaxLength(500);
+
+                entity.HasIndex(x => new
+                {
+                    x.EmployeeId,
+                    x.WorkDate
+                }).IsUnique();
+
+                entity.HasOne(x => x.Employee)
+                    .WithMany()
+                    .HasForeignKey(x => x.EmployeeId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Cấu hình ca làm việc
+            modelBuilder.Entity<WorkShift>(entity =>
+            {
+                entity.ToTable("WorkShifts");
+                entity.HasKey(x => x.Id);
+
+                entity.Property(x => x.Name)
+                    .HasMaxLength(100)
+                    .IsRequired();
+
+                entity.Property(x => x.StartTime).HasColumnType("time");
+                entity.Property(x => x.EndTime).HasColumnType("time");
+                entity.Property(x => x.BreakStartTime).HasColumnType("time");
+                entity.Property(x => x.BreakEndTime).HasColumnType("time");
+            });
+
+            // Cấu hình lịch sử phân ca nhân viên
+            modelBuilder.Entity<EmployeeShiftAssignment>(entity =>
+            {
+                entity.ToTable("EmployeeShiftAssignments");
+                entity.HasKey(x => x.Id);
+
+                entity.Property(x => x.EffectiveFrom).HasColumnType("date");
+                entity.Property(x => x.EffectiveTo).HasColumnType("date");
+
+                entity.HasOne(x => x.Employee)
+                    .WithMany(x => x.ShiftAssignments)
+                    .HasForeignKey(x => x.EmployeeId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(x => x.WorkShift)
+                    .WithMany(x => x.Assignments)
+                    .HasForeignKey(x => x.WorkShiftId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(x => new { x.EmployeeId, x.EffectiveFrom });
+            });
+
+            // Cấu hình snapshot ca làm việc trên bảng chấm công
+            modelBuilder.Entity<AttendanceRecord>(entity =>
+            {
+                entity.Property(x => x.ShiftName).HasMaxLength(100);
+                entity.Property(x => x.ShiftStartTime).HasColumnType("time");
+                entity.Property(x => x.ShiftEndTime).HasColumnType("time");
+                entity.Property(x => x.ShiftBreakStartTime).HasColumnType("time");
+                entity.Property(x => x.ShiftBreakEndTime).HasColumnType("time");
+            });
             // Unique Index - Không cho phép trùng tài khoản
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Username).IsUnique();
@@ -145,3 +224,4 @@ namespace QLNhanSu.Data
         }
     }
 }
+

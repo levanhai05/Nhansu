@@ -1,0 +1,7 @@
+@model List<Stat>
+<h4 class="mb-4">Tổng quan</h4>
+<div class="row g-3">
+@foreach (var s in Model) {
+<div class="col-md-4 col-xl-2"><a href="@s.Link" class="text-decoration-none"><div class="card text-bg-@s.Css h-100"><div class="card-body">
+<div class="d-flex justify-content-between"><span>@s.Label</span><i class="bi bi-@s.Icon fs-4"></i></div><h2 class="mb-0 mt-2">@s.Value</h2></div></div></a></div> }
+</div>

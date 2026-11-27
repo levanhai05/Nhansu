@@ -1,0 +1,144 @@
+﻿@model AttendanceSummaryVm
+
+@{
+    ViewData["Title"] = "Bảng chấm công toàn công ty";
+
+    TimeZoneInfo vn;
+    try
+    {
+        vn = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+    }
+    catch
+    {
+        vn = TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+    }
+
+    DateTime Local(DateTime value) =>
+        TimeZoneInfo.ConvertTimeFromUtc(
+            DateTime.SpecifyKind(value, DateTimeKind.Utc), vn);
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h3 class="mb-1">Bảng chấm công toàn công ty</h3>
+        <div class="text-muted">Dữ liệu chấm công theo tháng</div>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Chấm công cá nhân
+    </a>
+</div>
+
+<form method="get" asp-action="Monthly" class="row g-2 mb-4">
+    <div class="col-auto">
+        <select name="month" class="form-select">
+            @for (int i = 1; i <= 12; i++)
+            {
+                <option value="@i" selected="@(Model.Month == i)">
+                    Tháng @i
+                </option>
+            }
+        </select>
+    </div>
+    <div class="col-auto">
+        <input type="number" name="year" class="form-control"
+               value="@Model.Year" min="2000" max="2100" />
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-primary">Lọc bảng công</button>
+    </div>
+</form>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Tổng lượt chấm công</div>
+            <h3>@Model.TotalWorkDays</h3>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Đã hoàn thành</div>
+            <h3 class="text-success">@Model.CompletedDays</h3>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Ngày đi muộn</div>
+            <h3 class="text-warning">@Model.LateDays</h3>
+            <small>@Model.TotalLateMinutes phút</small>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Ngày về sớm</div>
+            <h3 class="text-danger">@Model.EarlyLeaveDays</h3>
+            <small>@Model.TotalEarlyLeaveMinutes phút</small>
+        </div></div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h5 class="mb-3">Chi tiết chấm công tháng @Model.Month/@Model.Year</h5>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Nhân viên</th>
+                        <th>Mã NV</th>
+                        <th>Ngày</th>
+                        <th>Giờ vào</th>
+                        <th>Giờ ra</th>
+                        <th>Đi muộn</th>
+                        <th>Về sớm</th>
+                        <th>Thời gian làm</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @if (Model.Records.Count == 0)
+                {
+                    <tr><td colspan="9" class="text-center text-muted py-4">
+                        Không có dữ liệu trong tháng này.
+                    </td></tr>
+                }
+                else
+                {
+                    @foreach (var r in Model.Records.OrderBy(x => x.EmployeeName).ThenByDescending(x => x.WorkDate))
+                    {
+                        <tr>
+                            <td>@r.EmployeeName</td>
+                            <td>#@r.EmployeeId</td>
+                            <td>@r.WorkDate.ToString("dd/MM/yyyy")</td>
+                            <td>@Local(r.CheckInUtc).ToString("HH:mm:ss")</td>
+                            <td>
+                                @(r.CheckOutUtc == null
+                                    ? "Chưa chấm"
+                                    : Local(r.CheckOutUtc.Value).ToString("HH:mm:ss"))
+                            </td>
+                            <td>
+                                @(r.LateMinutes > 0 ? $"{r.LateMinutes} phút" : "—")
+                            </td>
+                            <td>
+                                @(r.EarlyLeaveMinutes > 0 ? $"{r.EarlyLeaveMinutes} phút" : "—")
+                            </td>
+                            <td>@(r.WorkedMinutes / 60) giờ @(r.WorkedMinutes % 60) phút</td>
+                            <td>
+                                @if (r.CheckOutUtc == null)
+                                {
+                                    <span class="badge bg-warning text-dark">Thiếu giờ ra</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">Hoàn thành</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

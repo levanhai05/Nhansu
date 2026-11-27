@@ -1,9 +1,9 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QLNhanSu.Models
 {
-    // Entity - đại diện Nhân viên / Giảng viên
+    // Entity - Ä‘áº¡i diá»‡n NhÃ¢n viÃªn / Giáº£ng viÃªn
     public class Employee
     {
         [Key]
@@ -51,6 +51,8 @@ namespace QLNhanSu.Models
         public Position? Position { get; set; }
 
         public ICollection<Contract> Contracts { get; set; } = new List<Contract>();
-        public ICollection<LeaveRequest> LeaveRequests { get; set; } = new List<LeaveRequest>();
+        public ICollection<LeaveRequest> LeaveRequests { get; set; } = new List<LeaveRequest>();
+        public ICollection<EmployeeShiftAssignment> ShiftAssignments { get; set; } = new List<EmployeeShiftAssignment>();
     }
 }
+
