@@ -4,7 +4,6 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using QLNhanSu.Controllers;
 using QLNhanSu.DTOs;
 using QLNhanSu.DTOs.Common;
 using QLNhanSu.Models;

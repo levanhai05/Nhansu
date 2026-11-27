@@ -1,4 +1,3 @@
-using QLNhanSu.Controllers;
 using QLNhanSu.DTOs;
 using QLNhanSu.DTOs.Common;
 namespace QLNhanSu.Services
