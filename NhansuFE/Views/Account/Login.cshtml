@@ -1,0 +1,7 @@
+<div class="mx-auto mt-5" style="max-width:400px"><div class="card shadow"><div class="card-body p-4">
+<h4 class="text-center text-primary">🎓 Đại học Đông Á</h4><p class="text-center text-muted">Hệ thống quản lý nhân sự</p>
+@if (ViewBag.Error != null) {<div class="alert alert-danger">@ViewBag.Error</div>}
+@if (TempData["Err"] != null) {<div class="alert alert-warning">@TempData["Err"]</div>}
+<form method="post" asp-action="Login"><div class="mb-3"><label class="form-label">Tên đăng nhập hoặc email</label><input name="username" class="form-control" required autofocus></div>
+<div class="mb-3"><label class="form-label">Mật khẩu</label><input type="password" name="password" class="form-control" required></div>
+<button class="btn btn-primary w-100">Đăng nhập</button></form></div></div></div>

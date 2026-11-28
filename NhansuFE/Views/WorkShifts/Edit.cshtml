@@ -1,0 +1,20 @@
+﻿@model NhansuFE.Models.WorkShiftCreateVm
+@{
+    ViewData["Title"] = "Sửa ca làm việc";
+    var id = ViewContext.RouteData.Values["id"];
+}
+<h3 class="mb-4">Cập nhật ca làm việc</h3>
+<div class="card shadow-sm" style="max-width:650px"><div class="card-body">
+    <form asp-action="Edit" asp-route-id="@id" method="post">
+        <div class="mb-3"><label class="form-label">Tên ca</label><input asp-for="Name" class="form-control" required maxlength="100" /></div>
+        <div class="row">
+            <div class="col-6 mb-3"><label class="form-label">Bắt đầu</label><input asp-for="StartTime" type="time" class="form-control" required /></div>
+            <div class="col-6 mb-3"><label class="form-label">Kết thúc</label><input asp-for="EndTime" type="time" class="form-control" required /></div>
+            <div class="col-6 mb-3"><label class="form-label">Nghỉ từ</label><input asp-for="BreakStartTime" type="time" class="form-control" /></div>
+            <div class="col-6 mb-3"><label class="form-label">Nghỉ đến</label><input asp-for="BreakEndTime" type="time" class="form-control" /></div>
+        </div>
+        <div class="mb-3"><label class="form-label">Ân hạn (phút)</label><input asp-for="GraceMinutes" type="number" min="0" max="60" class="form-control" /></div>
+        <button class="btn btn-primary">Lưu thay đổi</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Hủy</a>
+    </form>
+</div></div>

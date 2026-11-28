@@ -60,3 +60,9 @@ desktop.ini
 
 ## ===== Uploads (nếu sau này lưu file lên đĩa) =====
 wwwroot/uploads/
+nhansu_all.txt
+NhansuFE/bin/
+NhansuFE/obj/
+
+# Frontend local configuration
+NhansuFE/appsettings*.json

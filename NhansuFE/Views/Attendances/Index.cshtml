@@ -1,0 +1,243 @@
+﻿@model AttendanceSummaryVm
+
+@{
+    ViewData["Title"] = "Chấm công cá nhân";
+
+    TimeZoneInfo vn;
+    try
+    {
+        vn = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+    }
+    catch
+    {
+        vn = TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+    }
+
+    DateTime Local(DateTime value) =>
+        TimeZoneInfo.ConvertTimeFromUtc(
+            DateTime.SpecifyKind(value, DateTimeKind.Utc), vn);
+
+    var now = Local(DateTime.UtcNow);
+    var todayRecord = Model.Records.FirstOrDefault(x =>
+        x.WorkDate.Date == now.Date);
+
+    bool isCurrentMonth = Model.Year == now.Year && Model.Month == now.Month;
+    bool canCheckIn = isCurrentMonth && todayRecord == null;
+    bool canCheckOut = isCurrentMonth && todayRecord != null && todayRecord.CheckOutUtc == null;
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h3 class="mb-1">Chấm công cá nhân</h3>
+        <div class="text-muted">Theo dõi thời gian làm việc của bạn</div>
+    </div>
+    <span class="badge bg-primary fs-6">
+        @now.ToString("dd/MM/yyyy")
+    </span>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="mb-3">Chấm công hôm nay</h5>
+        @if (ViewBag.CurrentShift is NhansuFE.Models.WorkShiftVm currentShift)
+        {
+            <div class="alert alert-primary">
+                <strong>Ca làm việc hôm nay:</strong> @currentShift.Name
+                · @currentShift.StartTime.ToString(@"hh\:mm") - @currentShift.EndTime.ToString(@"hh\:mm")
+                · Ân hạn @currentShift.GraceMinutes phút
+                @if (currentShift.BreakStartTime.HasValue && currentShift.BreakEndTime.HasValue)
+                {
+                    <span> · Nghỉ @currentShift.BreakStartTime.Value.ToString(@"hh\:mm") - @currentShift.BreakEndTime.Value.ToString(@"hh\:mm")</span>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning">Bạn chưa được phân ca có hiệu lực hôm nay. Vui lòng liên hệ Admin/HR.</div>
+        }
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100">
+                    <div class="text-muted">Giờ vào</div>
+                    <h4 class="mb-0">
+                        @(todayRecord == null
+                            ? "--:--"
+                            : Local(todayRecord.CheckInUtc).ToString("HH:mm:ss"))
+                    </h4>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100">
+                    <div class="text-muted">Giờ ra</div>
+                    <h4 class="mb-0">
+                        @(todayRecord?.CheckOutUtc == null
+                            ? "--:--"
+                            : Local(todayRecord.CheckOutUtc.Value).ToString("HH:mm:ss"))
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+        @if (todayRecord == null)
+        {
+            <div class="alert alert-info">
+                Bạn chưa chấm công vào hôm nay.
+            </div>
+        }
+        else if (todayRecord.CheckOutUtc == null)
+        {
+            <div class="alert alert-warning">
+                Bạn đã chấm công vào. Hãy chấm công ra khi kết thúc ngày làm việc.
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-success">
+                Bạn đã hoàn thành chấm công hôm nay.
+            </div>
+        }
+
+        <div class="d-flex gap-2 flex-wrap">
+            <form asp-action="CheckIn" method="post">
+                <button class="btn btn-success"
+                        type="submit"
+                        disabled="@(!canCheckIn || ViewBag.CurrentShift == null)">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    Chấm công vào
+                </button>
+            </form>
+
+            <form asp-action="CheckOut" method="post">
+                <button class="btn btn-danger"
+                        type="submit"
+                        disabled="@(!canCheckOut)">
+                    <i class="bi bi-box-arrow-left"></i>
+                    Chấm công ra
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h5 class="mb-0">Lịch sử chấm công</h5>
+
+    @if (ViewBag.IsHR == true)
+    {
+        <a asp-action="Monthly" class="btn btn-outline-primary btn-sm">
+            Bảng công toàn công ty
+        </a>
+    }
+</div>
+
+<form method="get" asp-action="Index" class="row g-2 mb-3">
+    <div class="col-auto">
+        <select name="month" class="form-select">
+            @for (int i = 1; i <= 12; i++)
+            {
+                <option value="@i" selected="@(Model.Month == i)">
+                    Tháng @i
+                </option>
+            }
+        </select>
+    </div>
+    <div class="col-auto">
+        <input type="number" name="year" class="form-control"
+               value="@Model.Year" min="2000" max="2100" />
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-primary">Xem dữ liệu</button>
+    </div>
+</form>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Số lượt chấm công</div>
+            <h3>@Model.TotalWorkDays</h3>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Đã hoàn thành</div>
+            <h3 class="text-success">@Model.CompletedDays</h3>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Ngày đi muộn</div>
+            <h3 class="text-warning">@Model.LateDays</h3>
+            <small>@Model.TotalLateMinutes phút</small>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Ngày về sớm</div>
+            <h3 class="text-danger">@Model.EarlyLeaveDays</h3>
+            <small>@Model.TotalEarlyLeaveMinutes phút</small>
+        </div></div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Ngày</th>
+                        <th>Giờ vào</th>
+                        <th>Giờ ra</th>
+                        <th>Đi muộn</th>
+                        <th>Về sớm</th>
+                        <th>Thời gian làm</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @if (Model.Records.Count == 0)
+                {
+                    <tr><td colspan="7" class="text-center text-muted py-4">
+                        Chưa có dữ liệu chấm công trong tháng này.
+                    </td></tr>
+                }
+                else
+                {
+                    @foreach (var r in Model.Records.OrderByDescending(x => x.WorkDate))
+                    {
+                        <tr>
+                            <td>@r.WorkDate.ToString("dd/MM/yyyy")</td>
+                            <td>@Local(r.CheckInUtc).ToString("HH:mm:ss")</td>
+                            <td>
+                                @(r.CheckOutUtc == null
+                                    ? "Chưa chấm"
+                                    : Local(r.CheckOutUtc.Value).ToString("HH:mm:ss"))
+                            </td>
+                            <td>
+                                @(r.LateMinutes > 0 ? $"{r.LateMinutes} phút" : "—")
+                            </td>
+                            <td>
+                                @(r.EarlyLeaveMinutes > 0 ? $"{r.EarlyLeaveMinutes} phút" : "—")
+                            </td>
+                            <td>@(r.WorkedMinutes / 60) giờ @(r.WorkedMinutes % 60) phút</td>
+                            <td>
+                                @if (r.CheckOutUtc == null)
+                                {
+                                    <span class="badge bg-warning text-dark">Thiếu giờ ra</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">Hoàn thành</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+

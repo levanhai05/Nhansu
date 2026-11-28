@@ -1,0 +1,44 @@
+@model object
+@{
+  var t = Model.GetType(); string ctl = ViewBag.Ctl;
+  int id = (int)(t.GetProperty("Id")!.GetValue(Model) ?? 0);
+  var lookups = ViewBag.Lookups as Dictionary<string, List<Opt>> ?? new();
+}
+<h4 class="mb-3">@(id == 0 ? "Thêm mới" : "Cập nhật") — @ViewBag.Title</h4>
+@if (ViewBag.Error != null) {<div class="alert alert-danger">@ViewBag.Error</div>}
+<form method="post" asp-controller="@ctl" asp-action="Save" class="card card-body" style="max-width:800px"><input type="hidden" name="Id" value="@id"><div class="row g-3">
+@foreach (var p in t.GetProperties().Where(p => p.Name != "Id" && p.GetCustomAttribute<NoFormAttribute>() == null)) {
+  var v = p.GetValue(Model); var u = Nullable.GetUnderlyingType(p.PropertyType) ?? p.PropertyType;
+  var label = p.GetCustomAttribute<DisplayAttribute>()?.Name ?? p.Name;
+  var reff = p.GetCustomAttribute<RefAttribute>(); var ch = p.GetCustomAttribute<ChoicesAttribute>();
+  bool req = p.GetCustomAttribute<RequiredAttribute>() != null || (u.IsValueType && Nullable.GetUnderlyingType(p.PropertyType) == null);
+  var cur = v is DateTime dt ? (dt == default ? "" : dt.ToString("yyyy-MM-dd")) : v is IFormattable f ? f.ToString(null, System.Globalization.CultureInfo.InvariantCulture) : v?.ToString() ?? "";
+  if ((u == typeof(int) || u == typeof(decimal)) && cur == "0" && id == 0) cur = "";
+  <div class="@(p.Name is "Reason" or "Description" or "Address" ? "col-12" : "col-md-6")"><label class="form-label">@label @if (req) {<span class="text-danger">*</span>}</label>
+  @if (reff != null && reff.Name == "employees") {
+    <input name="@p.Name" value="@cur" list="dl-@p.Name" class="form-control" placeholder="Nhập ID hoặc chọn từ danh sách" required="@req">
+    <datalist id="dl-@p.Name">@foreach (var o in lookups[reff.Name]) {<option value="@o.Value">@o.Text</option>}</datalist>
+  } else if (reff != null) {
+    <select name="@p.Name" class="form-select" required="@req"><option value="">— Chọn —</option>@foreach (var o in lookups[reff.Name]) {<option value="@o.Value" selected="@(o.Value == cur)">@o.Text</option>}</select>
+  } else if (ch != null) {
+    <select name="@p.Name" class="form-select" required="@req"><option value="">— Chọn —</option>@foreach (var o in ch.Values) {<option value="@o" selected="@(o == cur)">@o</option>}</select>
+  } else if (p.GetCustomAttribute<SecretAttribute>() != null) {
+    <input type="password" name="@p.Name" class="form-control" autocomplete="new-password">
+  } else if (u == typeof(DateTime)) {
+    <input type="date" name="@p.Name" value="@cur" class="form-control" required="@req">
+  } else if (u == typeof(int) || u == typeof(decimal)) {
+    <input type="number" step="any" min="0" name="@p.Name" value="@cur" class="form-control" required="@req">
+  } else if (p.Name is "Reason" or "Description" or "Address") {
+    <textarea name="@p.Name" class="form-control" rows="2" required="@req">@v</textarea>
+  } else {
+    <input name="@p.Name" value="@cur" class="form-control" required="@req">
+  }</div>
+}</div>
+<div class="mt-4"><button class="btn btn-primary"><i class="bi bi-save"></i> Lưu</button> <a class="btn btn-secondary" href="/@ctl">Hủy</a></div></form>
+@if (ctl == "Employees" && id != 0 && Context.Session.GetString("role") == "Admin") {
+<form method="post" asp-controller="Employees" asp-action="Link" asp-route-id="@id" class="card card-body mt-4" style="max-width:800px">
+<h6>Liên kết tài khoản đăng nhập với nhân viên này</h6>
+<div class="input-group"><input type="number" name="userId" class="form-control" placeholder="ID tài khoản (xem ở mục Tài khoản)" required>
+<button class="btn btn-outline-primary" name="mode" value="link">Liên kết</button>
+<button class="btn btn-outline-danger" name="mode" value="unlink">Hủy liên kết</button></div>
+<div class="form-text">Hủy liên kết cần nhập đúng ID tài khoản đang được liên kết.</div></form> }

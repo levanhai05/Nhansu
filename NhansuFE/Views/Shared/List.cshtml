@@ -1,0 +1,43 @@
+@model ListVm
+@{
+  var t = (Type)ViewBag.Type; string ctl = ViewBag.Ctl;
+  var props = t.GetProperties().Where(p => p.GetCustomAttribute<NoListAttribute>() == null).ToArray();
+  var filters = (List<Filter>)ViewBag.Filters; var acts = (List<RowAction>)ViewBag.Actions;
+  bool canEdit = ViewBag.CanEdit, canDel = ViewBag.CanDelete, canAct = ViewBag.CanAct;
+  var vi = new Dictionary<string, string> { ["Active"] = "Hiệu lực", ["Pending"] = "Chờ duyệt", ["Approved"] = "Đã duyệt", ["Rejected"] = "Từ chối", ["Terminated"] = "Đã chấm dứt", ["Expired"] = "Hết hạn" };
+  var cl = new Dictionary<string, string> { ["Active"] = "success", ["Approved"] = "success", ["Pending"] = "warning", ["Rejected"] = "danger", ["Terminated"] = "danger", ["Expired"] = "secondary" };
+  string Lbl(PropertyInfo p) => p.GetCustomAttribute<DisplayAttribute>()?.Name ?? p.Name;
+  string PageUrl(int pg) {
+    var q = Context.Request.Query.Where(k => k.Key != "page").Select(k => $"{k.Key}={Uri.EscapeDataString(k.Value.ToString())}").Append($"page={pg}");
+    return $"/{ctl}?{string.Join("&", q)}";
+  }
+}
+<div class="d-flex justify-content-between align-items-center mb-3"><h4 class="mb-0">@ViewBag.Title <span class="badge bg-secondary">@Model.Total</span></h4>
+@if ((bool)ViewBag.CanCreate) {<a class="btn btn-primary" href="/@ctl/Edit"><i class="bi bi-plus-lg"></i> Thêm mới</a>}</div>
+<form class="row g-2 mb-3" method="get">
+@foreach (var f in filters) { var cur = Context.Request.Query[f.Name].ToString();
+  <div class="col-auto">@if (f.Options == null) {<input name="@f.Name" value="@cur" class="form-control" placeholder="@f.Label">}
+  else {<select name="@f.Name" class="form-select"><option value="">— @f.Label —</option>@foreach (var o in f.Options) {<option value="@o.Value" selected="@(o.Value == cur)">@o.Text</option>}</select>}</div> }
+<div class="col-auto"><button class="btn btn-outline-primary"><i class="bi bi-search"></i> Lọc</button> <a class="btn btn-link" href="/@ctl">Xóa lọc</a></div></form>
+<div class="table-responsive"><table class="table table-hover table-bordered bg-white"><thead class="table-primary"><tr>
+@foreach (var p in props) {<th>@Lbl(p)</th>}<th style="width:1%">Thao tác</th></tr></thead><tbody>
+@foreach (var o in Model.Items) { var id = t.GetProperty("Id")!.GetValue(o); <tr>
+@foreach (var p in props) { var v = p.GetValue(o);
+  <td>@if (p.Name == "Status" && v is string s) {<span class="badge text-bg-@(cl.GetValueOrDefault(s, "light"))">@vi.GetValueOrDefault(s, s)</span>}
+  else if (p.Name == "IsActive") {<span class="badge text-bg-@((v as bool?) == true ? "success" : "secondary")">@((v as bool?) == true ? "Đang làm" : "Đã ngừng")</span>}
+  else if (v is DateTime d) {@d.ToString("dd/MM/yyyy")}
+  else if (v is decimal m) {@m.ToString("N0")}
+  else {@v}</td> }
+<td class="text-nowrap">
+@if (canEdit) {<a class="btn btn-sm btn-warning" href="/@ctl/Edit/@id" title="Sửa"><i class="bi bi-pencil"></i></a>}
+@if (canAct) { foreach (var a in acts) {
+  if (a.WhenProp != null && t.GetProperty(a.WhenProp)!.GetValue(o)?.ToString() != a.WhenValue) continue;
+  <form method="post" asp-controller="@ctl" asp-action="Act" asp-route-id="@id" class="d-inline" onsubmit="return confirm('@a.Label — xác nhận?')"><input type="hidden" name="act" value="@a.Action"><button class="btn btn-sm @a.Css">@a.Label</button></form> } }
+@if (canDel) {<form method="post" asp-controller="@ctl" asp-action="Delete" asp-route-id="@id" class="d-inline" onsubmit="return confirm('@ViewBag.DeleteLabel bản ghi này?')"><button class="btn btn-sm btn-danger" title="@ViewBag.DeleteLabel"><i class="bi bi-trash"></i></button></form>}
+</td></tr> }
+@if (!Model.Items.Any()) {<tr><td colspan="@(props.Length + 1)" class="text-center text-muted">Không có dữ liệu</td></tr>}
+</tbody></table></div>
+<nav><ul class="pagination">
+<li class="page-item @(Model.Page <= 1 ? "disabled" : "")"><a class="page-link" href="@PageUrl(Model.Page - 1)">«</a></li>
+@for (int i = Math.Max(1, Model.Page - 3); i <= Math.Min(Model.Pages, Model.Page + 3); i++) {<li class="page-item @(i == Model.Page ? "active" : "")"><a class="page-link" href="@PageUrl(i)">@i</a></li>}
+<li class="page-item @(Model.Page >= Model.Pages ? "disabled" : "")"><a class="page-link" href="@PageUrl(Model.Page + 1)">»</a></li></ul></nav>

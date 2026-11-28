@@ -22,6 +22,72 @@ namespace QLNhanSu.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("QLNhanSu.Models.AttendanceRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CheckInUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CheckOutUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EarlyLeaveMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LateMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<TimeSpan?>("ShiftBreakEndTime")
+                        .HasColumnType("time");
+
+                    b.Property<TimeSpan?>("ShiftBreakStartTime")
+                        .HasColumnType("time");
+
+                    b.Property<TimeSpan?>("ShiftEndTime")
+                        .HasColumnType("time");
+
+                    b.Property<int?>("ShiftGraceMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ShiftName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<TimeSpan?>("ShiftStartTime")
+                        .HasColumnType("time");
+
+                    b.Property<DateTime>("WorkDate")
+                        .HasColumnType("date");
+
+                    b.Property<int?>("WorkShiftId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("WorkedMinutes")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId", "WorkDate")
+                        .IsUnique();
+
+                    b.ToTable("AttendanceRecords", (string)null);
+                });
+
             modelBuilder.Entity("QLNhanSu.Models.Contract", b =>
                 {
                     b.Property<int>("Id")
@@ -195,6 +261,38 @@ namespace QLNhanSu.Migrations
                             Phone = "0905654321",
                             PositionId = 3
                         });
+                });
+
+            modelBuilder.Entity("QLNhanSu.Models.EmployeeShiftAssignment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("EffectiveFrom")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("EffectiveTo")
+                        .HasColumnType("date");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("WorkShiftId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkShiftId");
+
+                    b.HasIndex("EmployeeId", "EffectiveFrom");
+
+                    b.ToTable("EmployeeShiftAssignments", (string)null);
                 });
 
             modelBuilder.Entity("QLNhanSu.Models.LeaveRequest", b =>
@@ -374,6 +472,56 @@ namespace QLNhanSu.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("QLNhanSu.Models.WorkShift", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<TimeSpan?>("BreakEndTime")
+                        .HasColumnType("time");
+
+                    b.Property<TimeSpan?>("BreakStartTime")
+                        .HasColumnType("time");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("time");
+
+                    b.Property<int>("GraceMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("time");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("WorkShifts", (string)null);
+                });
+
+            modelBuilder.Entity("QLNhanSu.Models.AttendanceRecord", b =>
+                {
+                    b.HasOne("QLNhanSu.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+                });
+
             modelBuilder.Entity("QLNhanSu.Models.Contract", b =>
                 {
                     b.HasOne("QLNhanSu.Models.Employee", "Employee")
@@ -411,6 +559,25 @@ namespace QLNhanSu.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("QLNhanSu.Models.EmployeeShiftAssignment", b =>
+                {
+                    b.HasOne("QLNhanSu.Models.Employee", "Employee")
+                        .WithMany("ShiftAssignments")
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QLNhanSu.Models.WorkShift", "WorkShift")
+                        .WithMany("Assignments")
+                        .HasForeignKey("WorkShiftId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("WorkShift");
+                });
+
             modelBuilder.Entity("QLNhanSu.Models.LeaveRequest", b =>
                 {
                     b.HasOne("QLNhanSu.Models.Employee", "Employee")
@@ -442,6 +609,8 @@ namespace QLNhanSu.Migrations
                     b.Navigation("Contracts");
 
                     b.Navigation("LeaveRequests");
+
+                    b.Navigation("ShiftAssignments");
                 });
 
             modelBuilder.Entity("QLNhanSu.Models.Position", b =>
@@ -452,6 +621,11 @@ namespace QLNhanSu.Migrations
             modelBuilder.Entity("QLNhanSu.Models.User", b =>
                 {
                     b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("QLNhanSu.Models.WorkShift", b =>
+                {
+                    b.Navigation("Assignments");
                 });
 #pragma warning restore 612, 618
         }

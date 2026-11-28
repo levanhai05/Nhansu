@@ -29,4 +29,10 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="NhansuFE\**" />
+    <Content Remove="NhansuFE\**" />
+    <None Remove="NhansuFE\**" />
+    <EmbeddedResource Remove="NhansuFE\**" />
+  </ItemGroup>
 </Project>
